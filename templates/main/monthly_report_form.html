@@ -1,0 +1,58 @@
+{% extends 'layouts/base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}TiMo - {% if form.instance.pk %}Edytuj{% else %}Nowe{% endif %} rozliczenie miesięczne{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h2 class="mb-0 fw-bold">{% if form.instance.pk %}Edytuj{% else %}Nowe{% endif %} rozliczenie miesięczne</h2>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data" class="row g-3">
+                    {% csrf_token %}
+                    
+                    <!-- Okres rozliczeniowy -->
+                    <div class="col-12">
+                        <h4 class="text-primary fw-bold mb-3">Okres rozliczeniowy</h4>
+                        <div class="row">
+                            <div class="col-md-6">{{ form.month|as_crispy_field }}</div>
+                            <div class="col-md-6">{{ form.invoice_number|as_crispy_field }}</div>
+                        </div>
+                    </div>
+
+                    <!-- Godziny pracy -->
+                    <div class="col-12">
+                        <h4 class="text-primary fw-bold mb-3">Godziny pracy</h4>
+                        <div class="row">
+                            <div class="col-md-4">{{ form.capex_hours|as_crispy_field }}</div>
+                            <div class="col-md-4">{{ form.opex_hours|as_crispy_field }}</div>
+                            <div class="col-md-4">{{ form.consultation_hours|as_crispy_field }}</div>
+                        </div>
+                    </div>
+
+                    <!-- Dokumenty -->
+                    <div class="col-12">
+                        <h4 class="text-primary fw-bold mb-3">Dokumenty</h4>
+                        <div class="row">
+                            <div class="col-md-6">{{ form.invoice_file|as_crispy_field }}</div>
+                            <div class="col-md-6">{{ form.pzo_file|as_crispy_field }}</div>
+                        </div>
+                    </div>
+
+                    <div class="col-12 mt-4">
+                        <button type="submit" class="btn btn-primary fw-bold">
+                            <i class="fas fa-save me-1"></i>Zapisz
+                        </button>
+                        <button type="button" class="btn btn-secondary fw-bold" onclick="history.back()">
+                            <i class="fas fa-times me-1"></i>Anuluj
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

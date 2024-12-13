@@ -1,0 +1,379 @@
+{% extends 'layouts/base.html' %}
+
+{% block title %}TiMo - Dashboard{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Nagłówek z przyciskiem eksportu -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1 class="h3 mb-0">Dashboard</h1>
+            <p class="text-muted">Przegląd projektów i statystyk</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'export_dashboard' %}" class="btn btn-success" target="_blank">
+                <i class="fas fa-file-excel me-2"></i>Eksportuj do Excel
+            </a>
+        </div>
+    </div>
+
+    <!-- Główne wskaźniki -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="text-muted mb-2">Aktywne zamówienia</h6>
+                            <h3 class="mb-0 text-primary">{{ active_orders }}</h3>
+                        </div>
+                        <div class="bg-primary bg-opacity-10 rounded-circle p-3">
+                            <i class="fas fa-briefcase text-primary fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="text-muted mb-2">Zakończone zamówienia</h6>
+                            <h3 class="mb-0 text-success">{{ completed_orders }}</h3>
+                        </div>
+                        <div class="bg-success bg-opacity-10 rounded-circle p-3">
+                            <i class="fas fa-check-circle text-success fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="text-muted mb-2">Zarchiwizowane</h6>
+                            <h3 class="mb-0 text-secondary">{{ archived_orders }}</h3>
+                        </div>
+                        <div class="bg-secondary bg-opacity-10 rounded-circle p-3">
+                            <i class="fas fa-archive text-secondary fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h6 class="text-muted mb-2">Nadgodziny (30 dni)</h6>
+                            <h3 class="mb-0 text-warning">{{ recent_overtime }}</h3>
+                        </div>
+                        <div class="bg-warning bg-opacity-10 rounded-circle p-3">
+                            <i class="fas fa-clock text-warning fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Wykresy -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-transparent border-0">
+                    <h5 class="mb-0">Przepracowane godziny w czasie</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="hoursChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-transparent border-0">
+                    <h5 class="mb-0">Podział godzin w tym miesiącu</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="pieChart" height="300"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- KPI i Nadgodziny -->
+    <div class="row g-4">
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-transparent border-0">
+                    <h5 class="mb-0">Wskaźniki KPI</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 class="mb-0">Wykorzystanie budżetu CAPEX (aktywne)</h6>
+                            <span class="badge {% if capex_budget_usage > 100 %}bg-danger{% else %}bg-primary{% endif %}">
+                                {{ capex_budget_usage }}%
+                            </span>
+                        </div>
+                        <div class="progress" style="height: 10px;">
+                            <div class="progress-bar {% if capex_budget_usage > 100 %}bg-danger{% else %}bg-primary{% endif %}" 
+                                 role="progressbar" 
+                                 style="width: {{ capex_budget_usage }}%;" 
+                                 aria-valuenow="{{ capex_budget_usage }}" 
+                                 aria-valuemin="0" 
+                                 aria-valuemax="100">
+                            </div>
+                        </div>
+                        <small class="text-muted">
+                            {{ total_capex_hours|floatformat:1 }} / {{ total_capex_budget|floatformat:1 }} godzin
+                        </small>
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 class="mb-0">Wykorzystanie budżetu OPEX (aktywne)</h6>
+                            <span class="badge {% if opex_budget_usage > 100 %}bg-danger{% else %}bg-success{% endif %}">
+                                {{ opex_budget_usage }}%
+                            </span>
+                        </div>
+                        <div class="progress" style="height: 10px;">
+                            <div class="progress-bar {% if opex_budget_usage > 100 %}bg-danger{% else %}bg-success{% endif %}" 
+                                 role="progressbar" 
+                                 style="width: {{ opex_budget_usage }}%;" 
+                                 aria-valuenow="{{ opex_budget_usage }}" 
+                                 aria-valuemin="0" 
+                                 aria-valuemax="100">
+                            </div>
+                        </div>
+                        <small class="text-muted">
+                            {{ total_opex_hours|floatformat:1 }} / {{ total_opex_budget|floatformat:1 }} godzin
+                        </small>
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 class="mb-0">Wykorzystanie budżetu CAPEX (wszystkie)</h6>
+                            <span class="badge bg-primary">{{ capex_usage_percent_all }}%</span>
+                        </div>
+                        <div class="progress" style="height: 10px;">
+                            <div class="progress-bar bg-primary" role="progressbar" 
+                                 style="width: {{ capex_usage_percent_all }}%;" 
+                                 aria-valuenow="{{ capex_usage_percent_all }}" 
+                                 aria-valuemin="0" 
+                                 aria-valuemax="100">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h6 class="mb-0">Wykorzystanie budżetu OPEX (wszystkie)</h6>
+                            <span class="badge bg-success">{{ opex_usage_percent_all }}%</span>
+                        </div>
+                        <div class="progress" style="height: 10px;">
+                            <div class="progress-bar bg-success" role="progressbar" 
+                                 style="width: {{ opex_usage_percent_all }}%;" 
+                                 aria-valuenow="{{ opex_usage_percent_all }}" 
+                                 aria-valuemin="0" 
+                                 aria-valuemax="100">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0">Średnia liczba nadgodzin miesięcznie</h6>
+                        <h3 class="mb-0 text-warning">{{ avg_overtime_monthly }} h</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Ostatnie nadgodziny</h5>
+                    <a href="{% url 'overtime_list' %}" class="btn btn-sm btn-outline-primary">
+                        Zobacz wszystkie
+                    </a>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="border-0">Data</th>
+                                    <th class="border-0">Godziny</th>
+                                    <th class="border-0">Typ</th>
+                                    <th class="border-0">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for overtime in recent_overtimes %}
+                                <tr>
+                                    <td>{{ overtime.start_time|date:"Y-m-d" }}</td>
+                                    <td>{{ overtime.hours }}</td>
+                                    <td>
+                                        <span class="badge bg-primary bg-opacity-10 text-primary">
+                                            {{ overtime.get_type_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge {% if overtime.status == 'completed' %}bg-success{% elif overtime.status == 'draft' %}bg-warning{% else %}bg-secondary{% endif %} bg-opacity-10 text-{% if overtime.status == 'completed' %}success{% elif overtime.status == 'draft' %}warning{% else %}secondary{% endif %}">
+                                            {{ overtime.get_status_display }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Wykres kołowy
+    const pieCtx = document.getElementById('pieChart').getContext('2d');
+    new Chart(pieCtx, {
+        type: 'doughnut',
+        data: {
+            labels: [
+                'CAPEX ({{ capex_budget_usage|floatformat:1 }}% budżetu)',
+                'OPEX ({{ opex_budget_usage|floatformat:1 }}% budżetu)',
+                'Konsultacje'
+            ],
+            datasets: [{
+                data: [
+                    {{ capex_hours|default:0 }},
+                    {{ opex_hours|default:0 }},
+                    {{ consultation_hours|default:0 }}
+                ],
+                backgroundColor: [
+                    '{% if capex_budget_usage > 100 %}#dc3545{% else %}#0d6efd{% endif %}',
+                    '{% if opex_budget_usage > 100 %}#dc3545{% else %}#198754{% endif %}',
+                    '#ffc107'
+                ],
+                borderWidth: 2,
+                borderColor: '#ffffff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '70%',
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        padding: 20,
+                        usePointStyle: true,
+                        pointStyle: 'circle'
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.label || '';
+                            let value = context.formattedValue || '';
+                            return `${label}: ${value}h`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Wykres liniowy
+    const hoursCtx = document.getElementById('hoursChart').getContext('2d');
+    new Chart(hoursCtx, {
+        type: 'line',
+        data: {
+            labels: {{ months_labels|safe }},
+            datasets: [
+                {
+                    label: 'CAPEX',
+                    data: {{ capex_data }},
+                    borderColor: '#0d6efd',
+                    backgroundColor: 'rgba(13, 110, 253, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                },
+                {
+                    label: 'OPEX',
+                    data: {{ opex_data }},
+                    borderColor: '#198754',
+                    backgroundColor: 'rgba(25, 135, 84, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                },
+                {
+                    label: 'Konsultacje',
+                    data: {{ consultation_data }},
+                    borderColor: '#ffc107',
+                    backgroundColor: 'rgba(255, 193, 7, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        usePointStyle: true,
+                        pointStyle: 'circle',
+                        padding: 20
+                    }
+                },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false,
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.dataset.label || '';
+                            let value = context.formattedValue || '';
+                            return `${label}: ${value}h`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        drawBorder: false
+                    },
+                    ticks: {
+                        callback: function(value) {
+                            return value + 'h';
+                        }
+                    }
+                },
+                x: {
+                    grid: {
+                        drawBorder: false
+                    }
+                }
+            },
+            interaction: {
+                mode: 'nearest',
+                axis: 'x',
+                intersect: false
+            }
+        }
+    });
+</script>
+{% endblock %}

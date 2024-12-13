@@ -1,0 +1,164 @@
+{% extends 'layouts/base.html' %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Rozliczenie za {{ report.month|date:"F Y" }}</h2>
+        <div class="btn-group">
+            <a href="{% url 'monthly_report_edit' report.id %}" class="btn btn-primary">
+                <i class="fas fa-edit me-1"></i> Edytuj
+            </a>
+            {% if report.status == 'active' %}
+            <a href="{% url 'monthly_report_status_change' report.id 'archived' %}" class="btn btn-warning">
+                <i class="fas fa-archive me-1"></i> Archiwizuj
+            </a>
+            {% else %}
+            <a href="{% url 'monthly_report_status_change' report.id 'active' %}" class="btn btn-success">
+                <i class="fas fa-undo me-1"></i> Przywróć
+            </a>
+            {% endif %}
+            <a href="{% url 'monthly_report_delete' report.id %}" class="btn btn-danger" 
+               onclick="return confirm('Czy na pewno chcesz usunąć to rozliczenie?')">
+                <i class="fas fa-trash me-1"></i> Usuń
+            </a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Informacje podstawowe</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-sm-4"><strong>Numer faktury:</strong></div>
+                        <div class="col-sm-8">{{ report.invoice_number|default:"-" }}</div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-sm-4"><strong>Status:</strong></div>
+                        <div class="col-sm-8">
+                            <span class="badge {% if report.status == 'active' %}bg-success{% else %}bg-secondary{% endif %}">
+                                {{ report.get_status_display }}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-sm-4"><strong>Zamówienie:</strong></div>
+                        <div class="col-sm-8">
+                            {% if report.order %}
+                            <a href="{% url 'order_detail' report.order.id %}">{{ report.order.number }}</a>
+                            {% else %}
+                            -
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Godziny</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-sm-4"><strong>CAPEX:</strong></div>
+                        <div class="col-sm-8">{{ report.capex_hours }} h</div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-sm-4"><strong>OPEX:</strong></div>
+                        <div class="col-sm-8">{{ report.opex_hours }} h</div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-sm-4"><strong>Konsultacje:</strong></div>
+                        <div class="col-sm-8">{{ report.consultation_hours }} h</div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-sm-4"><strong>Suma:</strong></div>
+                        <div class="col-sm-8">
+                            <strong>{{ report.capex_hours|add:report.opex_hours|add:report.consultation_hours }} h</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0">Dokumenty</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <h5 class="card-title">Faktura</h5>
+                            {% if report.invoice_file %}
+                            <a href="{% url 'view_pdf' 'monthly_report' report.id 'invoice_file' %}" 
+                               class="btn btn-primary" target="_blank">
+                                <i class="fas fa-file-invoice me-1"></i> Pokaż
+                            </a>
+                            {% else %}
+                            <p class="text-muted">Brak pliku</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <h5 class="card-title">PZO</h5>
+                            {% if report.pzo_file %}
+                            <a href="{% url 'view_pdf' 'monthly_report' report.id 'pzo_file' %}" 
+                               class="btn btn-primary" target="_blank">
+                                <i class="fas fa-file-alt me-1"></i> Pokaż
+                            </a>
+                            {% else %}
+                            <p class="text-muted">Brak pliku</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <h5 class="card-title">Połączone</h5>
+                            {% if report.merged_file %}
+                            <a href="{% url 'view_pdf' 'monthly_report' report.id 'merged_file' %}" 
+                               class="btn btn-success" target="_blank">
+                                <i class="fas fa-file-pdf me-1"></i> Pokaż
+                            </a>
+                            {% else %}
+                            <a href="{% url 'generate_merged_document' report.id %}" 
+                               class="btn btn-secondary">
+                                <i class="fas fa-file-pdf me-1"></i> Generuj
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0">Informacje dodatkowe</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-sm-3"><strong>Data utworzenia:</strong></div>
+                <div class="col-sm-9">{{ report.created_at|date:"d.m.Y H:i" }}</div>
+            </div>
+            <div class="row mt-2">
+                <div class="col-sm-3"><strong>Ostatnia modyfikacja:</strong></div>
+                <div class="col-sm-9">{{ report.updated_at|date:"d.m.Y H:i" }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

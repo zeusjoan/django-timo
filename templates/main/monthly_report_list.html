@@ -1,0 +1,71 @@
+{% extends 'layouts/base.html' %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Rozliczenia miesięczne</h2>
+        <a href="{% url 'monthly_report_create' %}" class="btn btn-primary">
+            <i class="fas fa-plus me-1"></i> Nowe rozliczenie
+        </a>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th>Miesiąc</th>
+                            <th>Nr faktury</th>
+                            <th>Godziny CAPEX</th>
+                            <th>Godziny OPEX</th>
+                            <th>Godziny konsultacji</th>
+                            <th>Status</th>
+                            <th>Szczegóły</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for report in reports %}
+                        <tr>
+                            <td>{{ report.month|date:"F Y" }}</td>
+                            <td>{{ report.invoice_number }}</td>
+                            <td>{{ report.capex_hours }}</td>
+                            <td>{{ report.opex_hours }}</td>
+                            <td>{{ report.consultation_hours }}</td>
+                            <td>
+                                <span class="badge {% if report.status == 'active' %}bg-success{% else %}bg-secondary{% endif %}">
+                                    {{ report.get_status_display }}
+                                </span>
+                            </td>
+                            <td>
+                                <a href="{% url 'monthly_report_detail' report.id %}" class="btn btn-sm btn-primary">
+                                    <i class="fas fa-eye me-1"></i> Szczegóły
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center py-4">
+                                <p class="text-muted mb-0">Brak rozliczeń do wyświetlenia</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        })
+    });
+</script>
+{% endblock %}
+{% endblock %}

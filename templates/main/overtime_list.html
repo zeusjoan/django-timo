@@ -1,0 +1,90 @@
+{% extends 'layouts/base.html' %}
+{% load crispy_forms_tags %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Nadgodziny</h2>
+        <a href="{% url 'overtime_create' %}" class="btn btn-primary">
+            <i class="fas fa-plus me-1"></i> Nowe nadgodziny
+        </a>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Godziny</th>
+                            <th>Opis</th>
+                            <th>Status</th>
+                            <th>Dokumenty</th>
+                            <th>Akcje</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for overtime in overtimes %}
+                        <tr>
+                            <td>{{ overtime.date|date:"d.m.Y" }}</td>
+                            <td>{{ overtime.hours }}</td>
+                            <td>{{ overtime.description }}</td>
+                            <td>
+                                <span class="badge {% if overtime.status == 'active' %}bg-success{% else %}bg-secondary{% endif %}">
+                                    {{ overtime.get_status_display }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if overtime.attachment %}
+                                <a href="{% url 'view_pdf' 'overtime' overtime.id 'attachment' %}" 
+                                   class="btn btn-sm btn-outline-primary" 
+                                   target="_blank"
+                                   data-bs-toggle="tooltip"
+                                   title="Pokaż załącznik">
+                                    <i class="fas fa-file-alt me-1"></i> Załącznik
+                                </a>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{% url 'overtime_edit' overtime.id %}" class="btn btn-outline-secondary btn-icon" data-bs-toggle="tooltip" title="Edytuj">
+                                        <i class="fas fa-edit fa-xs"></i>
+                                    </a>
+                                    {% if overtime.status == 'active' %}
+                                    <a href="{% url 'overtime_status_change' overtime.id 'archived' %}" class="btn btn-outline-danger btn-icon" data-bs-toggle="tooltip" title="Archiwizuj">
+                                        <i class="fas fa-archive fa-xs"></i>
+                                    </a>
+                                    {% else %}
+                                    <a href="{% url 'overtime_status_change' overtime.id 'active' %}" class="btn btn-outline-success btn-icon" data-bs-toggle="tooltip" title="Przywróć">
+                                        <i class="fas fa-undo fa-xs"></i>
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center py-4">
+                                <p class="text-muted mb-0">Brak nadgodzin do wyświetlenia</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl)
+        })
+    });
+</script>
+{% endblock %}
+{% endblock %}

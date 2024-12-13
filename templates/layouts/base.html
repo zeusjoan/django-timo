@@ -1,0 +1,165 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="pl" class="h-100">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}TiMo{% endblock %}</title>
+    <link href="https://bootswatch.com/5/quartz/bootstrap.min.css" rel="stylesheet">
+    <link href="{% static 'css/style.css' %}" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .errorlist, .error, .invalid-feedback {
+            color: #dc3545 !important;
+            font-weight: bold !important;
+        }
+        .error {
+            color: #dc3545 !important;
+            font-weight: bold !important;
+            display: block;
+        }
+        ul.errorlist {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            color: #dc3545 !important;
+        }
+        .alert-error {
+            color: #dc3545 !important;
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="d-flex flex-column h-100">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand fw-bolder fs-3" href="/">
+                <i class="fas fa-clock me-2"></i>TiMo
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse justify-content-between" id="navbarNav">
+                <ul class="navbar-nav fs-5">
+                    {% if user.is_authenticated %}
+                    <li class="nav-item">
+                        <a class="nav-link fw-bold" href="/">
+                            <i class="fas fa-chart-line me-1"></i>Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle fw-bold" href="#" id="ordersDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-file-invoice me-1"></i>Zamówienia
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li>
+                                <a class="dropdown-item" href="{% url 'order_create' %}">
+                                    <i class="fas fa-plus me-1"></i>Dodaj zamówienie
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{% url 'order_list' %}">
+                                    <i class="fas fa-list me-1"></i>Lista zamówień
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle fw-bold" href="#" id="reportsDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-calendar-alt me-1"></i>Rozliczenia
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li>
+                                <a class="dropdown-item" href="{% url 'monthly_report_create' %}">
+                                    <i class="fas fa-plus me-1"></i>Dodaj rozliczenie
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{% url 'monthly_report_list' %}">
+                                    <i class="fas fa-list me-1"></i>Lista rozliczeń
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle fw-bold" href="#" id="overtimeDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-clock me-1"></i>Nadgodziny
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li>
+                                <a class="dropdown-item" href="{% url 'overtime_create' %}">
+                                    <i class="fas fa-plus me-1"></i>Dodaj nadgodziny
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{% url 'overtime_list' %}">
+                                    <i class="fas fa-list me-1"></i>Lista nadgodzin
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                    {% endif %}
+                </ul>
+                <ul class="navbar-nav fs-5">
+                    {% if user.is_authenticated %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle fw-bold" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user me-1"></i>{{ user.username }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li>
+                                <a class="dropdown-item" href="{% url 'profile' %}">
+                                    <i class="fas fa-id-card me-1"></i>Profil
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{% url 'change_password' %}">
+                                    <i class="fas fa-key me-1"></i>Zmień hasło
+                                </a>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <a class="dropdown-item" href="{% url 'logout' %}">
+                                    <i class="fas fa-sign-out-alt me-1"></i>Wyloguj
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                    {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link fw-bold" href="{% url 'login' %}">
+                            <i class="fas fa-sign-in-alt me-1"></i>Zaloguj
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container py-4 flex-shrink-0">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show fw-bold fs-5" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        {% block content %}
+        {% endblock %}
+    </main>
+
+    <footer class="footer py-3 bg-primary text-white mt-auto">
+        <div class="container text-center fs-5 fw-bold">
+            {% now "Y" %} TiMo | System monitorowania czasu pracy
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

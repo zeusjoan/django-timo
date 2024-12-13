@@ -1,0 +1,81 @@
+{% extends 'layouts/base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}TiMo - {% if form.instance.pk %}Edytuj{% else %}Nowe{% endif %} zamówienie{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h2 class="mb-0 fw-bold">{% if form.instance.pk %}Edytuj{% else %}Nowe{% endif %} zamówienie</h2>
+            </div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    <!-- Dane podstawowe -->
+                    <div class="mb-4">
+                        <h4 class="text-primary fw-bold mb-4">Dane podstawowe</h4>
+                        <div class="row gy-4">
+                            <div class="col-md-6">{{ form.document_date|as_crispy_field }}</div>
+                            <div class="col-md-6">{{ form.delivery_date|as_crispy_field }}</div>
+                            <div class="col-md-6">{{ form.number|as_crispy_field }}</div>
+                            <div class="col-md-6">{{ form.contract|as_crispy_field }}</div>
+                            <div class="col-md-6">{{ form.supplier_number|as_crispy_field }}</div>
+                        </div>
+                    </div>
+
+                    <!-- Budżet -->
+                    <div class="mb-4">
+                        <h4 class="text-primary fw-bold mb-3">Budżet</h4>
+                        <div class="row">
+                            <div class="col-md-3">{{ form.budget_capex|as_crispy_field }}</div>
+                            <div class="col-md-3">{{ form.budget_opex|as_crispy_field }}</div>
+                            <div class="col-md-3">{{ form.budget_consultation|as_crispy_field }}</div>
+                            <div class="col-md-3">{{ form.hourly_rate|as_crispy_field }}</div>
+                        </div>
+                    </div>
+
+                    <!-- Załącznik -->
+                    <div class="mb-4">
+                        <h4 class="text-primary fw-bold mb-3">Załącznik</h4>
+                        <div class="row">
+                            <div class="col-md-12">{{ form.attachment|as_crispy_field }}</div>
+                        </div>
+                    </div>
+
+                    <!-- Opis -->
+                    <div class="mb-4">
+                        <h4 class="text-primary fw-bold mb-3">Opis</h4>
+                        <div class="row">
+                            <div class="col-md-12">{{ form.description|as_crispy_field }}</div>
+                        </div>
+                    </div>
+
+                    <div class="text-end mt-4">
+                        <div class="btn-toolbar justify-content-end">
+                            <div class="btn-group me-2">
+                                <button type="button" class="btn btn-secondary" onclick="history.back()">
+                                    <i class="fas fa-arrow-left me-1"></i> Powrót
+                                </button>
+                            </div>
+                            <div class="btn-group">
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save me-1"></i> Zapisz
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.form-group {
+    margin-bottom: 1rem;
+}
+</style>
+{% endblock %}

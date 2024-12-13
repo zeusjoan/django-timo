@@ -1,0 +1,22 @@
+{% extends 'layouts/base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}TiMo - Wylogowanie{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body text-center">
+                <h2 class="card-title mb-4">Wylogowywanie</h2>
+                <p>Czy na pewno chcesz się wylogować?</p>
+                <form method="post">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-primary">Tak, wyloguj</button>
+                    <a href="{% url 'dashboard' %}" class="btn btn-secondary">Anuluj</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

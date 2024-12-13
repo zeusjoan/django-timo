@@ -1,0 +1,56 @@
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    font-size: 1.1rem;
+    font-weight: 500;
+}
+
+main {
+    flex: 1 0 auto;
+}
+
+.navbar {
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+.navbar-brand {
+    font-size: 1.4rem;
+}
+
+.card {
+    border: none;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.btn {
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-weight: 700;
+}
+
+.table thead {
+    font-weight: 600;
+}
+
+.dropdown-item {
+    font-size: 1.1rem;
+    font-weight: 500;
+}
+
+.alert {
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: black !important; /* Ustawienie koloru czcionki na czarny */
+    font-weight: bold !important; /* Pogrubienie czcionki */
+
+}
+
+footer {
+    font-size: 1rem;
+    font-weight: 500;
+}

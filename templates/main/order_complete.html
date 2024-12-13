@@ -1,0 +1,39 @@
+{% extends 'layouts/base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}TiMo - Zamknij zamówienie{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h2 class="mb-0 fw-bold">Zamknij zamówienie {{ order.order_number }}</h2>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-warning">
+                    <h4 class="alert-heading">Uwaga!</h4>
+                    <p class="mb-0">
+                        Zamknięcie zamówienia spowoduje, że nie będzie można dodawać do niego nowych rozliczeń i nadgodzin.
+                        Wszystkie powiązane rozliczenia i nadgodziny zostaną oznaczone jako zakończone.
+                    </p>
+                </div>
+
+                <form method="post">
+                    {% csrf_token %}
+                    {{ form|crispy }}
+
+                    <div class="mt-4">
+                        <button type="submit" class="btn btn-primary fw-bold">
+                            <i class="fas fa-check me-1"></i>Zakończ zamówienie
+                        </button>
+                        <button type="button" class="btn btn-secondary fw-bold ms-2" onclick="history.back()">
+                            <i class="fas fa-times me-1"></i>Anuluj
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
