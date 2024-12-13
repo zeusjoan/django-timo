@@ -1,0 +1,65 @@
+{% extends 'layouts/base.html' %}
+
+{% block title %}TiMo - Szczegóły nadgodzin{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="mb-0 fw-bold">Szczegóły nadgodzin</h2>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <p><strong>Nr incydentu:</strong> {{ overtime.incident_number }}</p>
+                            <p><strong>Data od:</strong> {{ overtime.start_time|date:"d.m.Y H:i" }}</p>
+                            <p><strong>Data do:</strong> {{ overtime.end_time|date:"d.m.Y H:i" }}</p>
+                            <p><strong>Godziny:</strong> {{ overtime.hours }}</p>
+                            <p><strong>Typ:</strong> {{ overtime.get_type_display }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Status:</strong> 
+                                <span class="badge rounded-pill {% if overtime.status == 'active' %}bg-success{% elif overtime.status == 'completed' %}bg-warning{% elif overtime.status == 'draft' %}bg-info{% else %}bg-secondary{% endif %} bg-opacity-10 text-{% if overtime.status == 'active' %}success{% elif overtime.status == 'completed' %}warning{% elif overtime.status == 'draft' %}info{% else %}secondary{% endif %} px-3">
+                                    {{ overtime.get_status_display }}
+                                </span>
+                            </p>
+                            {% if overtime.order %}
+                            <p><strong>Zamówienie:</strong> {{ overtime.order.number }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <p><strong>Opis:</strong></p>
+                            <p>{{ overtime.description|linebreaks }}</p>
+                        </div>
+                    </div>
+                    {% if overtime.attachment %}
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <p><strong>Załącznik:</strong></p>
+                            <a href="{% url 'view_pdf' 'overtime' overtime.id 'attachment' %}" 
+                               class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-file-pdf me-1"></i> Zobacz załącznik
+                            </a>
+                        </div>
+                    </div>
+                    {% endif %}
+                    <div class="row">
+                        <div class="col-12">
+                            <a href="{% url 'overtime_list' %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-1"></i> Powrót do listy
+                            </a>
+                            <a href="{% url 'overtime_edit' overtime.id %}" class="btn btn-primary">
+                                <i class="fas fa-edit me-1"></i> Edytuj
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

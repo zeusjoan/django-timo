@@ -17,8 +17,9 @@
                     <thead>
                         <tr>
                             <th>Data</th>
+                            <th>Nr incydentu</th>
+                            <th>Typ</th>
                             <th>Godziny</th>
-                            <th>Opis</th>
                             <th>Status</th>
                             <th>Szczegóły</th>
                         </tr>
@@ -27,8 +28,9 @@
                         {% for overtime in overtimes %}
                         <tr>
                             <td>{{ overtime.start_time|date:"d.m.Y" }}</td>
+                            <td>{{ overtime.incident_number }}</td>
+                            <td>{{ overtime.get_type_display }}</td>
                             <td>{{ overtime.hours }}</td>
-                            <td>{{ overtime.description }}</td>
                             <td>
                                 <span class="badge rounded-pill {% if overtime.status == 'active' %}bg-success{% elif overtime.status == 'completed' %}bg-warning{% elif overtime.status == 'draft' %}bg-info{% else %}bg-secondary{% endif %} bg-opacity-10 text-{% if overtime.status == 'active' %}success{% elif overtime.status == 'completed' %}warning{% elif overtime.status == 'draft' %}info{% else %}secondary{% endif %} px-3">
                                     {{ overtime.get_status_display }}
@@ -42,7 +44,7 @@
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="5" class="text-center py-4">
+                            <td colspan="6" class="text-center py-4">
                                 <p class="text-muted mb-0">Brak nadgodzin do wyświetlenia</p>
                             </td>
                         </tr>
