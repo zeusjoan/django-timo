@@ -76,7 +76,9 @@ class UserProfile(models.Model):
 
 class MonthlyReport(models.Model):
     REPORT_STATUS = [
+        ('draft', 'Wersja robocza'),
         ('active', 'Aktywne'),
+        ('completed', 'Zakończone'),
         ('archived', 'Zarchiwizowane'),
     ]
     
@@ -195,7 +197,9 @@ class MonthlyReport(models.Model):
 
 class Overtime(models.Model):
     OVERTIME_STATUS = [
+        ('draft', 'Wersja robocza'),
         ('active', 'Aktywne'),
+        ('completed', 'Zakończone'),
         ('archived', 'Zarchiwizowane'),
     ]
 
