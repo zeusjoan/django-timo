@@ -2,87 +2,90 @@
 
 {% block title %}TiMo - Szczegóły nadgodzin{% endblock %}
 
-{% block detail_title %}Szczegóły nadgodzin{% endblock %}
-
-{% block header_buttons %}
-<a href="{% url 'overtime_edit' overtime.id %}" class="btn btn-primary rounded-pill px-3">
-    <i class="fas fa-edit fa-fw"></i>
-    <span class="ms-1">Edytuj</span>
-</a>
-<a href="{% url 'overtime_list' %}" class="btn btn-secondary rounded-pill px-3">
-    <i class="fas fa-arrow-left fa-fw"></i>
-    <span class="ms-1">Powrót do listy</span>
-</a>
-{% endblock %}
-
-{% block status_badge %}
-<span class="badge rounded-pill {% if overtime.status == 'active' %}bg-success{% elif overtime.status == 'completed' %}bg-warning{% elif overtime.status == 'draft' %}bg-info{% else %}bg-secondary{% endif %} bg-opacity-10 text-{% if overtime.status == 'active' %}success{% elif overtime.status == 'completed' %}warning{% elif overtime.status == 'draft' %}info{% else %}secondary{% endif %}">
-    {{ overtime.get_status_display }}
-</span>
-{% endblock %}
-
-{% block left_column %}
-<div class="detail-section">
-    <h5 class="detail-section-title">Informacje podstawowe</h5>
-    <div class="detail-row d-flex">
-        <span class="detail-label">Nr incydentu:</span>
-        <span class="detail-value">{{ overtime.incident_number }}</span>
-    </div>
-    <div class="detail-row d-flex">
-        <span class="detail-label">Data od:</span>
-        <span class="detail-value">{{ overtime.start_time|date:"d.m.Y H:i" }}</span>
-    </div>
-    <div class="detail-row d-flex">
-        <span class="detail-label">Data do:</span>
-        <span class="detail-value">{{ overtime.end_time|date:"d.m.Y H:i" }}</span>
-    </div>
-    <div class="detail-row d-flex">
-        <span class="detail-label">Godziny:</span>
-        <span class="detail-value">{{ overtime.hours }}</span>
-    </div>
-    <div class="detail-row d-flex">
-        <span class="detail-label">Typ:</span>
-        <span class="detail-value">{{ overtime.get_type_display }}</span>
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h2 class="mb-0 fw-bold">Szczegóły nadgodzin</h2>
+                <div class="float-end">
+                    <a href="{% url 'overtime_edit' overtime.id %}" class="btn btn-primary rounded-pill px-3">
+                        <i class="fas fa-edit fa-fw"></i>
+                        <span class="ms-1">Edytuj</span>
+                    </a>
+                    <a href="{% url 'overtime_list' %}" class="btn btn-secondary rounded-pill px-3">
+                        <i class="fas fa-arrow-left fa-fw"></i>
+                        <span class="ms-1">Powrót do listy</span>
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="mb-4">
+                    <h4 class="text-primary fw-bold mb-4">Informacje podstawowe</h4>
+                    <div class="row gy-4">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">Nr incydentu</label>
+                                <input type="text" class="form-control" value="{{ overtime.incident_number }}" readonly>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">Data od</label>
+                                <input type="text" class="form-control" value="{{ overtime.start_time|date:'d.m.Y H:i' }}" readonly>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">Data do</label>
+                                <input type="text" class="form-control" value="{{ overtime.end_time|date:'d.m.Y H:i' }}" readonly>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">Godziny</label>
+                                <input type="text" class="form-control" value="{{ overtime.hours }}" readonly>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label class="form-label">Typ</label>
+                                <input type="text" class="form-control" value="{{ overtime.get_type_display }}" readonly>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% if overtime.description %}
+                <div class="mb-4">
+                    <h4 class="text-primary fw-bold mb-4">Opis</h4>
+                    <div class="row gy-4">
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <label class="form-label">Opis</label>
+                                <textarea class="form-control" rows="5" readonly>{{ overtime.description }}</textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                {% if overtime.attachment %}
+                <div class="mb-4">
+                    <h4 class="text-primary fw-bold mb-4">Załączniki</h4>
+                    <div class="row gy-4">
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <label class="form-label">Załącznik</label>
+                                <a href="{% url 'view_pdf' 'overtime' overtime.id 'attachment' %}" class="btn btn-outline-primary rounded-pill px-3">
+                                    <i class="fas fa-file-pdf fa-fw"></i>
+                                    <span class="ms-1">Zobacz załącznik</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
     </div>
 </div>
-{% endblock %}
-
-{% block right_column %}
-<div class="detail-section">
-    <h5 class="detail-section-title">Powiązania</h5>
-    {% if overtime.order %}
-    <div class="detail-row d-flex">
-        <span class="detail-label">Zamówienie:</span>
-        <span class="detail-value">
-            <a href="{% url 'order_detail' overtime.order.id %}" class="text-primary">
-                {{ overtime.order.number }}
-            </a>
-        </span>
-    </div>
-    {% endif %}
-</div>
-{% endblock %}
-
-{% block additional_sections %}
-{% if overtime.description %}
-<div class="detail-section">
-    <h5 class="detail-section-title">Opis</h5>
-    <div class="detail-row">
-        {{ overtime.description|linebreaks }}
-    </div>
-</div>
-{% endif %}
-
-{% if overtime.attachment %}
-<div class="detail-section">
-    <h5 class="detail-section-title">Załączniki</h5>
-    <div class="detail-row">
-        <a href="{% url 'view_pdf' 'overtime' overtime.id 'attachment' %}" 
-           class="btn btn-outline-primary rounded-pill px-3">
-            <i class="fas fa-file-pdf fa-fw"></i>
-            <span class="ms-1">Zobacz załącznik</span>
-        </a>
-    </div>
-</div>
-{% endif %}
 {% endblock %}
