@@ -400,6 +400,11 @@ def overtime_list(request):
     return render(request, 'main/overtime_list.html', {'overtimes': overtimes})
 
 @login_required
+def overtime_detail(request, overtime_id):
+    overtime = get_object_or_404(Overtime, id=overtime_id, user=request.user)
+    return render(request, 'main/overtime_detail.html', {'overtime': overtime})
+
+@login_required
 def generate_merged_document(request, report_id):
     report = get_object_or_404(MonthlyReport, id=report_id, user=request.user)
     

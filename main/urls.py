@@ -30,6 +30,7 @@ urlpatterns = [
     # Nadgodziny
     path('nadgodziny/', views.overtime_list, name='overtime_list'),
     path('nadgodziny/nowe/', views.overtime_create, name='overtime_create'),
+    path('nadgodziny/<int:overtime_id>/', views.overtime_detail, name='overtime_detail'),
     path('nadgodziny/<int:overtime_id>/edytuj/', views.overtime_edit, name='overtime_edit'),
     path('nadgodziny/<int:overtime_id>/usun/', views.overtime_delete, name='overtime_delete'),
     path('nadgodziny/<int:overtime_id>/status/<str:new_status>/', views.overtime_status_change, name='overtime_status_change'),

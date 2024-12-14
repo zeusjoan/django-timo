@@ -1,37 +1,37 @@
-# Django Timo Project
+# Projekt Django Timo
 
-## Overview
-Django Timo is a web application designed to manage orders, overtime, and monthly reports. It provides a user-friendly interface for tracking and managing various business operations.
+## Przegląd
+Django Timo to aplikacja webowa zaprojektowana do zarządzania zamówieniami, nadgodzinami i raportami miesięcznymi. Oferuje przyjazny interfejs do śledzenia i zarządzania różnymi operacjami biznesowymi.
 
-## Features
-- **Order Management:** Create, edit, and view detailed information about orders.
-- **Overtime Tracking:** Record and manage overtime hours with detailed views and editing capabilities.
-- **Monthly Reports:** Generate and manage monthly reports with comprehensive details.
+## Funkcje
+- **Zarządzanie Zamówieniami:** Tworzenie, edycja i przeglądanie szczegółowych informacji o zamówieniach.
+- **Śledzenie Nadgodzin:** Rejestrowanie i zarządzanie godzinami nadliczbowymi z możliwością przeglądania i edycji.
+- **Raporty Miesięczne:** Generowanie i zarządzanie raportami miesięcznymi z pełnymi szczegółami.
 
-## Installation
-1. Clone the repository:
+## Instalacja
+1. Sklonuj repozytorium:
    ```bash
    git clone https://github.com/zeusjoan/django-timo.git
    ```
-2. Navigate to the project directory:
+2. Przejdź do katalogu projektu:
    ```bash
    cd django-timo
    ```
-3. Install the required dependencies:
+3. Zainstaluj wymagane zależności:
    ```bash
    pip install -r requirements.txt
    ```
-4. Run the development server:
+4. Uruchom serwer deweloperski:
    ```bash
    python manage.py runserver
    ```
 
-## Usage
-- Access the application at `http://localhost:8000`.
-- Use the navigation bar to switch between orders, overtime, and reports.
+## Użytkowanie
+- Uzyskaj dostęp do aplikacji pod adresem `http://localhost:8000`.
+- Użyj paska nawigacyjnego, aby przełączać się między zamówieniami, nadgodzinami i raportami.
 
-## Contributing
-Contributions are welcome! Please fork the repository and submit a pull request for review.
+## Wkład
+Wkłady są mile widziane! Proszę o forka repozytorium i przesłanie pull requesta do recenzji.
 
-## License
-This project is licensed under the MIT License.
+## Licencja
+Ten projekt jest licencjonowany na warunkach licencji MIT.

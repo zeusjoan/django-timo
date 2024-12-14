@@ -6,19 +6,19 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>Rozliczenie za {{ report.month|date:"F Y" }}</h2>
         <div class="btn-group">
-            <a href="{% url 'monthly_report_edit' report.id %}" class="btn btn-primary">
+            <a href="{% url 'monthly_report_edit' report.id %}" class="btn btn-primary rounded-pill px-3">
                 <i class="fas fa-edit me-1"></i> Edytuj
             </a>
             {% if report.status == 'active' %}
-            <a href="{% url 'monthly_report_status_change' report.id 'archived' %}" class="btn btn-warning">
+            <a href="{% url 'monthly_report_status_change' report.id 'archived' %}" class="btn btn-warning rounded-pill px-3">
                 <i class="fas fa-archive me-1"></i> Archiwizuj
             </a>
             {% else %}
-            <a href="{% url 'monthly_report_status_change' report.id 'active' %}" class="btn btn-success">
+            <a href="{% url 'monthly_report_status_change' report.id 'active' %}" class="btn btn-success rounded-pill px-3">
                 <i class="fas fa-undo me-1"></i> Przywróć
             </a>
             {% endif %}
-            <a href="{% url 'monthly_report_delete' report.id %}" class="btn btn-danger" 
+            <a href="{% url 'monthly_report_delete' report.id %}" class="btn btn-danger rounded-pill px-3" 
                onclick="return confirm('Czy na pewno chcesz usunąć to rozliczenie?')">
                 <i class="fas fa-trash me-1"></i> Usuń
             </a>
@@ -28,7 +28,7 @@
     <div class="row">
         <div class="col-md-6">
             <div class="card mb-4">
-                <div class="card-header">
+                <div class="card-header bg-primary text-white">
                     <h5 class="card-title mb-0">Informacje podstawowe</h5>
                 </div>
                 <div class="card-body">
@@ -60,7 +60,7 @@
 
         <div class="col-md-6">
             <div class="card mb-4">
-                <div class="card-header">
+                <div class="card-header bg-primary text-white">
                     <h5 class="card-title mb-0">Godziny</h5>
                 </div>
                 <div class="card-body">
@@ -88,7 +88,7 @@
     </div>
 
     <div class="card mb-4">
-        <div class="card-header">
+        <div class="card-header bg-primary text-white">
             <h5 class="card-title mb-0">Dokumenty</h5>
         </div>
         <div class="card-body">
@@ -99,7 +99,7 @@
                             <h5 class="card-title">Faktura</h5>
                             {% if report.invoice_file %}
                             <a href="{% url 'view_pdf' 'monthly_report' report.id 'invoice_file' %}" 
-                               class="btn btn-primary" target="_blank">
+                               class="btn btn-primary rounded-pill px-3" target="_blank">
                                 <i class="fas fa-file-invoice me-1"></i> Pokaż
                             </a>
                             {% else %}
@@ -114,7 +114,7 @@
                             <h5 class="card-title">PZO</h5>
                             {% if report.pzo_file %}
                             <a href="{% url 'view_pdf' 'monthly_report' report.id 'pzo_file' %}" 
-                               class="btn btn-primary" target="_blank">
+                               class="btn btn-primary rounded-pill px-3" target="_blank">
                                 <i class="fas fa-file-alt me-1"></i> Pokaż
                             </a>
                             {% else %}
@@ -129,12 +129,12 @@
                             <h5 class="card-title">Połączone</h5>
                             {% if report.merged_file %}
                             <a href="{% url 'view_pdf' 'monthly_report' report.id 'merged_file' %}" 
-                               class="btn btn-success" target="_blank">
+                               class="btn btn-success rounded-pill px-3" target="_blank">
                                 <i class="fas fa-file-pdf me-1"></i> Pokaż
                             </a>
                             {% else %}
                             <a href="{% url 'generate_merged_document' report.id %}" 
-                               class="btn btn-secondary">
+                               class="btn btn-secondary rounded-pill px-3">
                                 <i class="fas fa-file-pdf me-1"></i> Generuj
                             </a>
                             {% endif %}
@@ -146,7 +146,7 @@
     </div>
 
     <div class="card mb-4">
-        <div class="card-header">
+        <div class="card-header bg-primary text-white">
             <h5 class="card-title mb-0">Informacje dodatkowe</h5>
         </div>
         <div class="card-body">
