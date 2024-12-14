@@ -155,7 +155,7 @@ class MonthlyReport(models.Model):
 
                 # Przygotuj nazwę pliku
                 month_str = self.month.strftime('%Y-%m')
-                invoice_part = f"_{self.invoice_number}" if self.invoice_number else ""
+                invoice_part = f"_{self.invoice_number.replace('/', '-')}" if self.invoice_number else ""
                 merged_filename = f'Rozliczenie_{month_str}{invoice_part}.pdf'
                 merged_path = os.path.join(merged_dir, merged_filename)
 

@@ -23,6 +23,7 @@ from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.enums import TA_LEFT, TA_CENTER
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Image, Table, TableStyle
 from reportlab.lib import colors
+import sqlite3
 
 @login_required
 def dashboard(request):
@@ -143,9 +144,12 @@ def order_create(request):
             order = form.save(commit=False)
             order.user = request.user
             order.status = 'active'  # Ustawienie statusu na 'active'
-            order.save()
-            messages.success(request, 'Zamówienie zostało dodane.')
-            return redirect('dashboard')
+            try:
+                order.save()
+                messages.success(request, 'Zamówienie zostało dodane.')
+                return redirect('dashboard')
+            except sqlite3.IntegrityError as e:
+                messages.error(request, 'Błąd: Pole start_date nie może być puste. Proszę uzupełnić wszystkie wymagane pola.')
     else:
         form = OrderForm(user=request.user)
     return render(request, 'main/order_form.html', {'form': form})
@@ -327,12 +331,23 @@ def monthly_report_delete(request, report_id):
 @login_required
 def monthly_report_list(request):
     reports = MonthlyReport.objects.filter(user=request.user).order_by('-month')
+    for report in reports:
+        report.overtimes_sum = Overtime.objects.filter(
+            user=request.user,
+            start_time__year=report.month.year,
+            start_time__month=report.month.month
+        ).aggregate(Sum('hours'))['hours__sum'] or 0
     return render(request, 'main/monthly_report_list.html', {'reports': reports})
 
 @login_required
 def monthly_report_detail(request, report_id):
     report = get_object_or_404(MonthlyReport, id=report_id, user=request.user)
-    return render(request, 'main/monthly_report_detail.html', {'report': report})
+    overtimes_sum = Overtime.objects.filter(
+        user=request.user,
+        start_time__year=report.month.year,
+        start_time__month=report.month.month
+    ).aggregate(Sum('hours'))['hours__sum'] or 0
+    return render(request, 'main/monthly_report_detail.html', {'report': report, 'overtimes_sum': overtimes_sum})
 
 @login_required
 def overtime_create(request):
@@ -352,7 +367,7 @@ def overtime_create(request):
                 overtime.status = 'draft'
                 overtime.save()
                 messages.success(request, 'Nadgodziny zostały dodane.')
-                return redirect('dashboard')
+                return redirect('overtime_list')
             except ValidationError as e:
                 messages.error(request, str(e))
         else:
@@ -555,9 +570,15 @@ def change_password(request):
 @login_required
 def monthly_report_status_change(request, report_id, new_status):
     report = get_object_or_404(MonthlyReport, id=report_id, user=request.user)
-    if new_status in ['draft', 'sent', 'paid', 'completed']:
+    if new_status in ['draft', 'sent', 'paid', 'completed', 'active']:
         report.status = new_status
         report.save()
+        # Update the status of related overtime entries
+        Overtime.objects.filter(
+            user=request.user,
+            start_time__year=report.month.year,
+            start_time__month=report.month.month
+        ).update(status=new_status)
         messages.success(request, 'Status rozliczenia został zmieniony.')
     return redirect('monthly_report_list')
 
@@ -695,3 +716,23 @@ def order_pdf_preview(request, order_id):
     response.write(pdf)
     
     return response
+
+@login_required
+def monthly_report_approve(request, report_id):
+    report = get_object_or_404(MonthlyReport, id=report_id, user=request.user)
+    if report.status == 'completed':
+        messages.info(request, 'To rozliczenie zostało już zatwierdzone.')
+        return redirect('monthly_report_detail', report_id=report_id)
+
+    # Update the status of related overtime entries
+    Overtime.objects.filter(
+        user=request.user,
+        start_time__year=report.month.year,
+        start_time__month=report.month.month
+    ).update(status='completed')
+
+    # Change the status of the report to 'completed'
+    report.status = 'completed'
+    report.save()
+    messages.success(request, 'Rozliczenie zostało zatwierdzone.')
+    return redirect('monthly_report_detail', report_id=report_id)

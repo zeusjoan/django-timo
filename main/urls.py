@@ -26,6 +26,7 @@ urlpatterns = [
     path('rozliczenie/<int:report_id>/usun/', views.monthly_report_delete, name='monthly_report_delete'),
     path('rozliczenie/<int:report_id>/merge/', views.generate_merged_document, name='generate_merged_document'),
     path('rozliczenie/<int:report_id>/status/<str:new_status>/', views.monthly_report_status_change, name='monthly_report_status_change'),
+    path('rozliczenie/<int:report_id>/zatwierdz/', views.monthly_report_approve, name='monthly_report_approve'),
     
     # Nadgodziny
     path('nadgodziny/', views.overtime_list, name='overtime_list'),

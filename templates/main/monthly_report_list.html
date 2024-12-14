@@ -17,10 +17,11 @@
                     <thead>
                         <tr>
                             <th>Miesiąc</th>
-                            <th>Nr faktury</th>
                             <th>Godziny CAPEX</th>
                             <th>Godziny OPEX</th>
                             <th>Godziny konsultacji</th>
+                            <th>Nadgodziny</th>
+                            <th>Suma godzin</th>
                             <th>Status</th>
                             <th>Szczegóły</th>
                         </tr>
@@ -29,10 +30,11 @@
                         {% for report in reports %}
                         <tr>
                             <td>{{ report.month|date:"F Y" }}</td>
-                            <td>{{ report.invoice_number }}</td>
                             <td>{{ report.capex_hours }}</td>
                             <td>{{ report.opex_hours }}</td>
                             <td>{{ report.consultation_hours }}</td>
+                            <td>{{ report.overtimes_sum }}</td>
+                            <td>{{ report.capex_hours|add:report.opex_hours|add:report.consultation_hours|add:report.overtimes_sum }}</td>
                             <td>
                                 <span class="badge rounded-pill {% if report.status == 'active' %}bg-success{% elif report.status == 'completed' %}bg-warning{% elif report.status == 'draft' %}bg-info{% else %}bg-secondary{% endif %} bg-opacity-10 text-{% if report.status == 'active' %}success{% elif report.status == 'completed' %}warning{% elif report.status == 'draft' %}info{% else %}secondary{% endif %} px-3">
                                     {{ report.get_status_display }}
@@ -46,7 +48,7 @@
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="7" class="text-center py-4">
+                            <td colspan="8" class="text-center py-4">
                                 <p class="text-muted mb-0">Brak rozliczeń do wyświetlenia</p>
                             </td>
                         </tr>

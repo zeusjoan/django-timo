@@ -5,24 +5,6 @@
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>Rozliczenie za {{ report.month|date:"F Y" }}</h2>
-        <div class="btn-group">
-            <a href="{% url 'monthly_report_edit' report.id %}" class="btn btn-primary rounded-pill px-3">
-                <i class="fas fa-edit me-1"></i> Edytuj
-            </a>
-            {% if report.status == 'active' %}
-            <a href="{% url 'monthly_report_status_change' report.id 'archived' %}" class="btn btn-warning rounded-pill px-3">
-                <i class="fas fa-archive me-1"></i> Archiwizuj
-            </a>
-            {% else %}
-            <a href="{% url 'monthly_report_status_change' report.id 'active' %}" class="btn btn-success rounded-pill px-3">
-                <i class="fas fa-undo me-1"></i> Przywróć
-            </a>
-            {% endif %}
-            <a href="{% url 'monthly_report_delete' report.id %}" class="btn btn-danger rounded-pill px-3" 
-               onclick="return confirm('Czy na pewno chcesz usunąć to rozliczenie?')">
-                <i class="fas fa-trash me-1"></i> Usuń
-            </a>
-        </div>
     </div>
 
     <div class="row">
@@ -33,13 +15,21 @@
                 </div>
                 <div class="card-body">
                     <div class="row">
+                        <div class="col-sm-4"><strong>Data utworzenia:</strong></div>
+                        <div class="col-sm-8">{{ report.created_at|date:"d.m.Y H:i" }}</div>
+                    </div>
+                    <div class="row mt-2">
+                        <div class="col-sm-4"><strong>Data aktualizacji:</strong></div>
+                        <div class="col-sm-8">{{ report.updated_at|date:"d.m.Y H:i" }}</div>
+                    </div>
+                    <div class="row mt-2">
                         <div class="col-sm-4"><strong>Numer faktury:</strong></div>
                         <div class="col-sm-8">{{ report.invoice_number|default:"-" }}</div>
                     </div>
                     <div class="row mt-2">
                         <div class="col-sm-4"><strong>Status:</strong></div>
                         <div class="col-sm-8">
-                            <span class="badge {% if report.status == 'active' %}bg-success{% else %}bg-secondary{% endif %}">
+                            <span class="badge {% if report.status == 'active' %}bg-success{% else %}bg-secondary{% endif %} bg-opacity-10 text-{% if report.status == 'active' %}success{% else %}secondary{% endif %} px-3">
                                 {{ report.get_status_display }}
                             </span>
                         </div>
@@ -77,9 +67,13 @@
                         <div class="col-sm-8">{{ report.consultation_hours }} h</div>
                     </div>
                     <div class="row mt-2">
+                        <div class="col-sm-4"><strong>Nadgodziny:</strong></div>
+                        <div class="col-sm-8">{{ overtimes_sum }} h</div>
+                    </div>
+                    <div class="row mt-2">
                         <div class="col-sm-4"><strong>Suma:</strong></div>
                         <div class="col-sm-8">
-                            <strong>{{ report.capex_hours|add:report.opex_hours|add:report.consultation_hours }} h</strong>
+                            <strong class="text-black" style="font-size: 1.25rem;">{{ report.capex_hours|add:report.opex_hours|add:report.consultation_hours|add:overtimes_sum }} h</strong>
                         </div>
                     </div>
                 </div>
@@ -145,20 +139,28 @@
         </div>
     </div>
 
-    <div class="card mb-4">
-        <div class="card-header bg-primary text-white">
-            <h5 class="card-title mb-0">Informacje dodatkowe</h5>
-        </div>
-        <div class="card-body">
-            <div class="row">
-                <div class="col-sm-3"><strong>Data utworzenia:</strong></div>
-                <div class="col-sm-9">{{ report.created_at|date:"d.m.Y H:i" }}</div>
-            </div>
-            <div class="row mt-2">
-                <div class="col-sm-3"><strong>Ostatnia modyfikacja:</strong></div>
-                <div class="col-sm-9">{{ report.updated_at|date:"d.m.Y H:i" }}</div>
-            </div>
-        </div>
+    <div class="btn-group mt-4 d-flex justify-content-end">
+        <a href="{% url 'monthly_report_approve' report.id %}" class="btn btn-success rounded-pill px-3">
+            <i class="fas fa-check me-1"></i> Zatwierdź
+        </a>
+        <a href="{% url 'monthly_report_edit' report.id %}" class="btn btn-primary rounded-pill px-3">
+            <i class="fas fa-edit me-1"></i> Edytuj
+        </a>
+        {% if report.status == 'active' %}
+        <a href="{% url 'monthly_report_status_change' report.id 'archived' %}" class="btn btn-warning rounded-pill px-3">
+            <i class="fas fa-archive me-1"></i> Archiwizuj
+        </a>
+        {% else %}
+        {% if report.status != 'active' %}
+        <a href="{% url 'monthly_report_status_change' report.id 'active' %}" class="btn btn-success rounded-pill px-3">
+            <i class="fas fa-undo me-1"></i> Przywróć
+        </a>
+        {% endif %}
+        {% endif %}
+        <a href="{% url 'monthly_report_delete' report.id %}" class="btn btn-danger rounded-pill px-3" 
+           onclick="return confirm('Czy na pewno chcesz usunąć to rozliczenie?')">
+            <i class="fas fa-trash me-1"></i> Usuń
+        </a>
     </div>
 </div>
 {% endblock %}
