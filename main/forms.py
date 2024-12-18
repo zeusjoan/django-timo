@@ -3,6 +3,7 @@ from .models import Order, MonthlyReport, Overtime, UserProfile
 from datetime import datetime
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.db.models import Sum
 
 class OrderForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
@@ -13,35 +14,29 @@ class OrderForm(forms.ModelForm):
         model = Order
         fields = [
             'number',
-            'description',
-            'document_date',
-            'delivery_date',
             'contract',
             'supplier_number',
-            'budget_capex',
-            'budget_opex',
-            'budget_consultation',
+            'document_date',
+            'delivery_date',
             'hourly_rate',
+            'capex_hours',
+            'opex_hours',
+            'consultation_hours',
             'attachment',
+            'status'
         ]
         widgets = {
             'number': forms.TextInput(attrs={'class': 'form-control'}),
-            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
-            'document_date': forms.DateInput(attrs={
-                'type': 'date',
-                'class': 'form-control'
-            }),
-            'delivery_date': forms.DateInput(attrs={
-                'type': 'date',
-                'class': 'form-control'
-            }),
             'contract': forms.TextInput(attrs={'class': 'form-control'}),
             'supplier_number': forms.TextInput(attrs={'class': 'form-control'}),
-            'budget_capex': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
-            'budget_opex': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
-            'budget_consultation': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
-            'hourly_rate': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+            'document_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'delivery_date': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
+            'hourly_rate': forms.NumberInput(attrs={'class': 'form-control'}),
+            'capex_hours': forms.NumberInput(attrs={'class': 'form-control'}),
+            'opex_hours': forms.NumberInput(attrs={'class': 'form-control'}),
+            'consultation_hours': forms.NumberInput(attrs={'class': 'form-control'}),
             'attachment': forms.FileInput(attrs={'class': 'form-control'}),
+            'status': forms.Select(attrs={'class': 'form-control'})
         }
 
 class OrderCompleteForm(forms.Form):
@@ -64,14 +59,26 @@ class MonthlyReportForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         
         if self.order:
-            # Używamy poprawnych nazw pól z modelu Order
-            remaining_capex = self.order.budget_capex - (self.order.monthly_reports.aggregate(total=models.Sum('capex_hours'))['total'] or 0)
-            remaining_opex = self.order.budget_opex - (self.order.monthly_reports.aggregate(total=models.Sum('opex_hours'))['total'] or 0)
-            remaining_consultation = self.order.budget_consultation - (self.order.monthly_reports.aggregate(total=models.Sum('consultation_hours'))['total'] or 0)
-            
-            self.fields['capex_hours'].help_text = f'Dostępne: {remaining_capex:.1f}'
-            self.fields['opex_hours'].help_text = f'Dostępne: {remaining_opex:.1f}'
-            self.fields['consultation_hours'].help_text = f'Dostępne: {remaining_consultation:.1f}'
+            # Ustaw maksymalne wartości na podstawie pozostałego budżetu
+            used_capex = MonthlyReport.objects.filter(order=self.order).aggregate(
+                total=Sum('capex_hours'))['total'] or 0
+            used_opex = MonthlyReport.objects.filter(order=self.order).aggregate(
+                total=Sum('opex_hours'))['total'] or 0
+            used_consultation = MonthlyReport.objects.filter(order=self.order).aggregate(
+                total=Sum('consultation_hours'))['total'] or 0
+
+            remaining_capex = float(self.order.capex_hours or 0) - float(used_capex)
+            remaining_opex = float(self.order.opex_hours or 0) - float(used_opex)
+            remaining_consultation = float(self.order.consultation_hours or 0) - float(used_consultation)
+
+            self.fields['capex_hours'].widget.attrs['max'] = remaining_capex
+            self.fields['opex_hours'].widget.attrs['max'] = remaining_opex
+            self.fields['consultation_hours'].widget.attrs['max'] = remaining_consultation
+
+            # Dodaj informacje o pozostałym budżecie w etykietach pól
+            self.fields['capex_hours'].label = f'Godziny CAPEX (pozostało: {remaining_capex:.2f}h)'
+            self.fields['opex_hours'].label = f'Godziny OPEX (pozostało: {remaining_opex:.2f}h)'
+            self.fields['consultation_hours'].label = f'Godziny konsultacji (pozostało: {remaining_consultation:.2f}h)'
 
     month = forms.DateField(
         widget=forms.DateInput(
@@ -139,18 +146,18 @@ class MonthlyReportForm(forms.ModelForm):
             if self.instance.pk:
                 existing_reports = existing_reports.exclude(pk=self.instance.pk)
 
-            total_capex = existing_reports.aggregate(total=models.Sum('capex_hours'))['total'] or 0
-            total_opex = existing_reports.aggregate(total=models.Sum('opex_hours'))['total'] or 0
-            total_consultation = existing_reports.aggregate(total=models.Sum('consultation_hours'))['total'] or 0
+            total_capex = existing_reports.aggregate(total=Sum('capex_hours'))['total'] or 0
+            total_opex = existing_reports.aggregate(total=Sum('opex_hours'))['total'] or 0
+            total_consultation = existing_reports.aggregate(total=Sum('consultation_hours'))['total'] or 0
 
-            if total_capex + capex_hours > self.order.budget_capex:
-                self.add_error('capex_hours', f'Przekroczono budżet CAPEX. Dostępne: {self.order.budget_capex - total_capex:.1f}')
+            if total_capex + capex_hours > self.order.capex_hours:
+                self.add_error('capex_hours', f'Przekroczono budżet CAPEX. Dostępne: {self.order.capex_hours - total_capex:.1f}')
             
-            if total_opex + opex_hours > self.order.budget_opex:
-                self.add_error('opex_hours', f'Przekroczono budżet OPEX. Dostępne: {self.order.budget_opex - total_opex:.1f}')
+            if total_opex + opex_hours > self.order.opex_hours:
+                self.add_error('opex_hours', f'Przekroczono budżet OPEX. Dostępne: {self.order.opex_hours - total_opex:.1f}')
             
-            if total_consultation + consultation_hours > self.order.budget_consultation:
-                self.add_error('consultation_hours', f'Przekroczono budżet konsultacji. Dostępne: {self.order.budget_consultation - total_consultation:.1f}')
+            if total_consultation + consultation_hours > self.order.consultation_hours:
+                self.add_error('consultation_hours', f'Przekroczono budżet konsultacji. Dostępne: {self.order.consultation_hours - total_consultation:.1f}')
 
         return cleaned_data
 

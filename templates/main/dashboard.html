@@ -1,65 +1,103 @@
 {% extends 'layouts/base.html' %}
+{% load static %}
+{% load main_extras %}
 
 {% block title %}TiMo - Dashboard{% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4">
-    <!-- Nagłówek z przyciskiem eksportu -->
+<div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h1 class="h3 mb-0">Dashboard</h1>
-            <p class="text-muted">Przegląd projektów i statystyk</p>
+            <h1 class="h3 mb-0 text-gray-800">Dashboard</h1>
+            <p class="mb-0">Przegląd projektów i statystyk</p>
         </div>
-        <div class="d-flex gap-2">
-            <a href="{% url 'export_dashboard' %}" class="btn btn-success" target="_blank">
+        <div>
+            <a href="{% url 'export_dashboard' %}" class="btn btn-success">
                 <i class="fas fa-file-excel me-2"></i>Eksportuj do Excel
             </a>
         </div>
     </div>
 
-    <!-- Główne wskaźniki -->
-    <div class="row g-4 mb-4">
-        <div class="col-md-4">
-            <div class="card border-0 shadow-sm h-100">
+    <div class="row">
+        <!-- Wartość rozliczeń -->
+        <div class="col-12 mb-4">
+            <div class="card border-0 shadow h-100">
                 <div class="card-body">
-                    <div class="d-flex justify-content-between">
+                    <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h6 class="text-muted mb-2">Budżet CAPEX</h6>
-                            <h3 class="mb-0 text-primary">{{ budget_capex|floatformat:1 }} h</h3>
+                            <h6 class="text-uppercase text-muted fw-semibold mb-2">Wartość rozliczeń</h6>
+                            <h2 class="mb-0">{{ total_value|default:"0.00" }} PLN</h2>
+                            <p class="text-muted mb-0">Suma wartości z zakończonych rozliczeń dla aktywnych zamówień</p>
                         </div>
-                        <div class="bg-primary bg-opacity-10 rounded-circle p-3">
-                            <i class="fas fa-chart-line text-primary fa-2x"></i>
+                        <div class="icon-shape icon-lg bg-success-subtle text-success rounded-3">
+                            <i class="fas fa-money-bill-wave fa-fw"></i>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
-            <div class="card border-0 shadow-sm h-100">
+
+        <!-- Budżety -->
+        <div class="col-md-4 mb-4">
+            <div class="card border-0 shadow h-100">
                 <div class="card-body">
-                    <div class="d-flex justify-content-between">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
                         <div>
-                            <h6 class="text-muted mb-2">Budżet OPEX</h6>
-                            <h3 class="mb-0 text-success">{{ budget_opex|floatformat:1 }} h</h3>
+                            <h6 class="text-uppercase text-muted fw-semibold mb-2">Budżet konsultacji</h6>
+                            <h2 class="mb-0">{{ remaining_consultation_hours|default:"0.0" }} h</h2>
                         </div>
-                        <div class="bg-success bg-opacity-10 rounded-circle p-3">
-                            <i class="fas fa-chart-bar text-success fa-2x"></i>
+                        <div class="icon-shape icon-lg bg-purple-subtle text-purple rounded-3">
+                            <i class="fas fa-users fa-fw"></i>
                         </div>
+                    </div>
+                    <p class="text-muted mb-2">Zamówiono: {{ total_consultation_hours|default:"0.0" }} h</p>
+                    <p class="text-muted mb-3">Wykorzystane: {{ used_consultation_hours|default:"0.0" }} h</p>
+                    <div class="progress" style="height: 4px;">
+                        <div class="progress-bar bg-purple" role="progressbar" style="width: {{ consultation_progress }}%"></div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-md-4">
-            <div class="card border-0 shadow-sm h-100">
+
+        <div class="col-md-4 mb-4">
+            <div class="card border-0 shadow h-100">
                 <div class="card-body">
-                    <div class="d-flex justify-content-between">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
                         <div>
-                            <h6 class="text-muted mb-2">Budżet konsultacji</h6>
-                            <h3 class="mb-0 text-warning">{{ budget_consultation|floatformat:1 }} h</h3>
+                            <h6 class="text-uppercase text-muted fw-semibold mb-2">Budżet OPEX</h6>
+                            <h2 class="mb-0">{{ remaining_opex_hours|default:"0.0" }} h</h2>
                         </div>
-                        <div class="bg-warning bg-opacity-10 rounded-circle p-3">
-                            <i class="fas fa-users text-warning fa-2x"></i>
+                        <div class="icon-shape icon-lg bg-info-subtle text-info rounded-3">
+                            <i class="fas fa-chart-line fa-fw"></i>
                         </div>
+                    </div>
+                    <p class="text-muted mb-2">Zamówiono: {{ total_opex_hours|default:"0.0" }} h</p>
+                    <p class="text-muted mb-2">Wykorzystane: {{ total_used_opex_hours|default:"0.0" }} h</p>
+                    <p class="text-muted mb-3">w tym nadgodziny: {{ overtime_opex_hours|default:"0.0" }} h</p>
+                    <div class="progress" style="height: 4px;">
+                        <div class="progress-bar bg-info" role="progressbar" style="width: {{ opex_progress }}%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-4">
+            <div class="card border-0 shadow h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div>
+                            <h6 class="text-uppercase text-muted fw-semibold mb-2">Budżet CAPEX</h6>
+                            <h2 class="mb-0">{{ remaining_capex_hours|default:"0.0" }} h</h2>
+                        </div>
+                        <div class="icon-shape icon-lg bg-primary-subtle text-primary rounded-3">
+                            <i class="fas fa-chart-bar fa-fw"></i>
+                        </div>
+                    </div>
+                    <p class="text-muted mb-2">Zamówiono: {{ total_capex_hours|default:"0.0" }} h</p>
+                    <p class="text-muted mb-2">Wykorzystane: {{ total_used_capex_hours|default:"0.0" }} h</p>
+                    <p class="text-muted mb-3">w tym nadgodziny: {{ overtime_capex_hours|default:"0.0" }} h</p>
+                    <div class="progress" style="height: 4px;">
+                        <div class="progress-bar bg-primary" role="progressbar" style="width: {{ capex_progress }}%"></div>
                     </div>
                 </div>
             </div>

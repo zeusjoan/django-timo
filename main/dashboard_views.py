@@ -2,10 +2,40 @@ from django.views.generic import TemplateView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Sum
 from django.db.models.functions import TruncMonth
-from .models import Order, MonthlyReport, Overtime
+from .models import Order, MonthlyReport, Overtime, MonthlyReportSummary, OrderValue
 import json
 from datetime import datetime, timedelta
 from django.utils import timezone
+from django.db.models import Q as models
+
+def calculate_total_value(user):
+    """Oblicza sumę wartości dla aktywnych zamówień."""
+    from django.db.models import Sum
+    from .models import OrderValue
+
+    total = OrderValue.objects.filter(
+        order__user=user,
+        order__status=Order.Status.ACTIVE
+    ).aggregate(
+        total=Sum('total_value')
+    )['total'] or 0
+
+    print(f"\nDEBUG - Wartości zamówień:")
+    order_values = OrderValue.objects.filter(
+        order__user=user,
+        order__status=Order.Status.ACTIVE
+    )
+    
+    for value in order_values:
+        print(f"\nZamówienie: {value.order.number}")
+        print(f"CAPEX: {value.capex_hours}h")
+        print(f"OPEX: {value.opex_hours}h")
+        print(f"Konsultacje: {value.consultation_hours}h")
+        print(f"Stawka: {value.order.hourly_rate} PLN/h")
+        print(f"Wartość: {value.total_value} PLN")
+
+    print(f"\nŁączna wartość wszystkich aktywnych zamówień: {total} PLN")
+    return total
 
 class DashboardView(LoginRequiredMixin, TemplateView):
     template_name = 'main/dashboard.html'
@@ -56,6 +86,77 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             total_hours=Sum('hours')
         )['total_hours'] or 0
 
+        # Statystyki budżetów dla aktywnych zamówień
+        active_orders_budgets = Order.objects.filter(
+            user=user,
+            status=Order.Status.ACTIVE
+        ).aggregate(
+            total_budget_capex=Sum('budget_capex'),
+            total_budget_opex=Sum('budget_opex'),
+            total_budget_consultation=Sum('budget_consultation')
+        )
+
+        # Wykorzystane godziny z rozliczeń miesięcznych
+        used_hours = MonthlyReport.objects.filter(
+            user=user,
+            order__status=Order.Status.ACTIVE
+        ).aggregate(
+            used_capex=Sum('capex_hours'),
+            used_opex=Sum('opex_hours'),
+            used_consultation=Sum('consultation_hours')
+        )
+
+        # Wykorzystane godziny z nadgodzin
+        overtime_hours = Overtime.objects.filter(
+            user=user,
+            order__status=Order.Status.ACTIVE,
+            status='completed'
+        ).aggregate(
+            overtime_capex=Sum('hours', filter=models.Q(type='capex')),
+            overtime_opex=Sum('hours', filter=models.Q(type='opex'))
+        )
+
+        # Obliczanie sumy wartości z aktywnych zamówień
+        total_value = calculate_total_value(user)
+        print(f"DEBUG: Całkowita wartość rozliczeń: {total_value} PLN")
+
+        # Obliczanie pozostałych budżetów
+        total_budget_capex = float(active_orders_budgets['total_budget_capex'] or 0)
+        total_budget_opex = float(active_orders_budgets['total_budget_opex'] or 0)
+        total_budget_consultation = float(active_orders_budgets['total_budget_consultation'] or 0)
+
+        used_capex = float(used_hours['used_capex'] or 0)
+        used_opex = float(used_hours['used_opex'] or 0)
+        used_consultation = float(used_hours['used_consultation'] or 0)
+
+        overtime_capex = float(overtime_hours['overtime_capex'] or 0)
+        overtime_opex = float(overtime_hours['overtime_opex'] or 0)
+
+        remaining_budget_capex = total_budget_capex - used_capex - overtime_capex
+        remaining_budget_opex = total_budget_opex - used_opex - overtime_opex
+        remaining_budget_consultation = total_budget_consultation - used_consultation
+
+        # Obliczanie procentów wykorzystania dla każdego typu budżetu
+        def calculate_percentage(used, total):
+            if total and float(total) > 0:
+                return (float(used) / float(total)) * 100
+            return 0
+
+        budget_percentages = {
+            'capex': {
+                'used': calculate_percentage(used_capex, total_budget_capex),
+                'overtime': calculate_percentage(overtime_capex, total_budget_capex)
+            },
+            'opex': {
+                'used': calculate_percentage(used_opex, total_budget_opex),
+                'overtime': calculate_percentage(overtime_opex, total_budget_opex)
+            },
+            'consultation': {
+                'used': calculate_percentage(used_consultation, total_budget_consultation),
+                'overtime': 0  # Nie ma nadgodzin dla konsultacji
+            }
+        }
+
         context.update({
             'months': json.dumps(months),
             'capex_data': json.dumps(capex_data),
@@ -65,6 +166,37 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             'completed_orders': completed_orders,
             'archived_orders': archived_orders,
             'recent_overtime': recent_overtime,
+            'total_value': float(total_value),
+            # Nowe dane budżetowe
+            'budget_stats': {
+                'capex': {
+                    'total': total_budget_capex,
+                    'used': used_capex,
+                    'overtime': overtime_capex,
+                    'remaining': remaining_budget_capex,
+                    'percentages': budget_percentages['capex']
+                },
+                'opex': {
+                    'total': total_budget_opex,
+                    'used': used_opex,
+                    'overtime': overtime_opex,
+                    'remaining': remaining_budget_opex,
+                    'percentages': budget_percentages['opex']
+                },
+                'consultation': {
+                    'total': total_budget_consultation,
+                    'used': used_consultation,
+                    'overtime': 0,  # Nie ma nadgodzin konsultacyjnych
+                    'remaining': remaining_budget_consultation,
+                    'percentages': budget_percentages['consultation']
+                }
+            }
         })
+
+        # Debug print
+        print("Active Orders Budgets:", active_orders_budgets)
+        print("Used Hours:", used_hours)
+        print("Overtime Hours:", overtime_hours)
+        print("Budget Stats:", context['budget_stats'])
 
         return context
