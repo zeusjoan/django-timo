@@ -39,6 +39,12 @@ def dashboard(request):
     completed_orders = Order.objects.filter(user=user, status='completed').count()
     archived_orders = Order.objects.filter(user=user, status='archived').count()
 
+    # Pobierz aktywne zamówienie i jego budżety
+    active_order = Order.objects.filter(user=user, status='active').first()
+    budget_capex = active_order.budget_capex if active_order else Decimal('0')
+    budget_opex = active_order.budget_opex if active_order else Decimal('0')
+    budget_consultation = active_order.budget_consultation if active_order else Decimal('0')
+
     # Nadgodziny z ostatnich 30 dni
     recent_overtime = Overtime.objects.filter(
         user=user,
@@ -126,6 +132,9 @@ def dashboard(request):
         'capex_data': capex_data,
         'opex_data': opex_data,
         'consultation_data': consultation_data,
+        'budget_capex': budget_capex,
+        'budget_opex': budget_opex,
+        'budget_consultation': budget_consultation,
     }
 
     return render(request, 'main/dashboard.html', context)
