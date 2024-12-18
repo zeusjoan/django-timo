@@ -132,8 +132,15 @@ class MonthlyReportForm(forms.ModelForm):
             ).exclude(pk=self.instance.pk if self.instance else None).first()
 
             if existing_report:
+                # Lista polskich nazw miesięcy
+                polish_months = {
+                    1: 'stycznia', 2: 'lutego', 3: 'marca', 4: 'kwietnia',
+                    5: 'maja', 6: 'czerwca', 7: 'lipca', 8: 'sierpnia',
+                    9: 'września', 10: 'października', 11: 'listopada', 12: 'grudnia'
+                }
+                month_name = polish_months[month.month]
                 raise forms.ValidationError(
-                    f'Rozliczenie za {month.strftime("%B %Y")} dla tego zamówienia już istnieje.'
+                    f'Rozliczenie z {month_name} {month.year} dla tego zamówienia już istnieje.'
                 )
 
         if self.order:

@@ -302,7 +302,17 @@ def monthly_report_create(request):
                 messages.success(request, 'Rozliczenie zostało dodane.')
                 return redirect('monthly_report_list')
             except ValidationError as e:
-                messages.error(request, str(e))
+                messages.error(request, str(e.message) if hasattr(e, 'message') else str(e))
+        else:
+            # Wyświetl błędy walidacji formularza
+            for field, errors in form.errors.items():
+                if field == '__all__':  # Błędy niezwiązane z konkretnym polem
+                    for error in errors:
+                        messages.error(request, error)
+                else:
+                    field_label = form.fields[field].label or field
+                    for error in errors:
+                        messages.error(request, f"{field_label}: {error}")
     else:
         form = MonthlyReportForm(user=request.user, order=active_order)
     
