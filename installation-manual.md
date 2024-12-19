@@ -130,3 +130,24 @@ sudo systemctl daemon-reload
 sudo systemctl enable gunicorn
 sudo systemctl enable nginx
 ```
+
+## Aktualizacja aplikacji po zmianach w repozytorium
+
+Po pobraniu zmian z repozytorium należy wykonać następujące kroki:
+
+1. Pobranie zmian z repozytorium:
+```bash
+git pull
+```
+
+2. Wykonanie migracji bazy danych:
+```bash
+python manage.py migrate
+```
+
+3. Uruchomienie serwera:
+```bash
+python manage.py runserver
+```
+
+Ważne: Przed wykonaniem powyższych kroków upewnij się, że masz aktywowane środowisko wirtualne (venv).
