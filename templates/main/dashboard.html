@@ -37,6 +37,18 @@
             </div>
         </div>
 
+        <!-- Wykres budżetów -->
+        <div class="col-12 mb-4">
+            <div class="card border-0 shadow h-100">
+                <div class="card-body">
+                    <h6 class="text-uppercase text-muted fw-semibold mb-3 text-center">Wykorzystanie zamówienia</h6>
+                    <div style="height: 300px;">
+                        <canvas id="budgetsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Budżety -->
         <div class="col-md-4 mb-4">
             <div class="card border-0 shadow h-100">
@@ -51,7 +63,7 @@
                         </div>
                     </div>
                     <p class="text-muted mb-2">Zamówiono: {{ total_consultation_hours|default:"0.0" }} h</p>
-                    <p class="text-muted mb-3">Wykorzystane: {{ used_consultation_hours|default:"0.0" }} h</p>
+                    <p class="text-muted mb-3">Wykorzystane: {{ total_used_consultation_hours|default:"0.0" }} h</p>
                     <div class="progress" style="height: 4px;">
                         <div class="progress-bar bg-purple" role="progressbar" style="width: {{ consultation_progress }}%"></div>
                     </div>
@@ -104,4 +116,101 @@
         </div>
     </div>
 </div>
-{% endblock %}
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const ctx = document.getElementById('budgetsChart').getContext('2d');
+    const consultationHours = parseFloat('{{ total_used_consultation_hours|default:"0.0" }}');
+    const opexHours = parseFloat('{{ total_used_opex_hours|default:"0.0" }}');
+    const capexHours = parseFloat('{{ total_used_capex_hours|default:"0.0" }}');
+    
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: ['Konsultacje', 'OPEX', 'CAPEX'],
+            datasets: [{
+                label: 'Zamówione',
+                data: [100.0, 100.0, 100.0],
+                backgroundColor: 'rgba(88, 103, 221, 0.6)',
+                borderColor: 'rgba(88, 103, 221, 1)',
+                borderWidth: 1
+            }, {
+                label: 'Wykorzystane',
+                data: [consultationHours, opexHours, capexHours],
+                backgroundColor: 'rgba(255, 184, 34, 0.6)',
+                borderColor: 'rgba(255, 184, 34, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Godziny',
+                        font: {
+                            size: 14,
+                            weight: 'bold',
+                            color: '#000000'
+                        }
+                    },
+                    max: 100,
+                    ticks: {
+                        font: {
+                            size: 12
+                        },
+                        color: '#000000'
+                    }
+                },
+                x: {
+                    ticks: {
+                        font: {
+                            size: 12,
+                            weight: 'bold'
+                        },
+                        color: '#000000'
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    position: 'top',
+                    align: 'center',
+                    labels: {
+                        font: {
+                            size: 12,
+                            weight: 'bold'
+                        },
+                        color: '#000000',
+                        padding: 20
+                    }
+                },
+                title: {
+                    display: false
+                },
+                datalabels: {
+                    anchor: 'center',
+                    align: 'center',
+                    color: '#000000',
+                    font: {
+                        weight: 'bold',
+                        size: 13
+                    },
+                    formatter: function(value) {
+                        return Math.round(value) + 'h';
+                    },
+                    display: function(context) {
+                        return context.dataset.data[context.dataIndex] > 0;
+                    }
+                }
+            }
+        },
+        plugins: [ChartDataLabels]
+    });
+});
+</script>
+{% endblock extra_js %}
+{% endblock content %}
