@@ -6,10 +6,6 @@ from django.db import models
 from django.db.models import Sum
 
 class OrderForm(forms.ModelForm):
-    def __init__(self, *args, **kwargs):
-        self.user = kwargs.pop('user', None)
-        super().__init__(*args, **kwargs)
-
     class Meta:
         model = Order
         fields = [
@@ -18,12 +14,11 @@ class OrderForm(forms.ModelForm):
             'supplier_number',
             'document_date',
             'delivery_date',
-            'hourly_rate',
             'capex_hours',
             'opex_hours',
             'consultation_hours',
-            'attachment',
-            'status'
+            'hourly_rate',
+            'attachment'
         ]
         widgets = {
             'number': forms.TextInput(attrs={'class': 'form-control'}),
@@ -35,9 +30,12 @@ class OrderForm(forms.ModelForm):
             'capex_hours': forms.NumberInput(attrs={'class': 'form-control'}),
             'opex_hours': forms.NumberInput(attrs={'class': 'form-control'}),
             'consultation_hours': forms.NumberInput(attrs={'class': 'form-control'}),
-            'attachment': forms.FileInput(attrs={'class': 'form-control'}),
-            'status': forms.Select(attrs={'class': 'form-control'})
+            'attachment': forms.FileInput(attrs={'class': 'form-control'})
         }
+
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
 
 class OrderCompleteForm(forms.Form):
     completion_notes = forms.CharField(
@@ -233,6 +231,7 @@ class OvertimeForm(forms.ModelForm):
         cleaned_data = super().clean()
         start_time = cleaned_data.get('start_time')
         end_time = cleaned_data.get('end_time')
+        overtime_type = cleaned_data.get('type')
         
         if start_time and end_time and end_time <= start_time:
             raise forms.ValidationError("Czas zakończenia musi być późniejszy niż czas rozpoczęcia.", code='error')
@@ -242,6 +241,36 @@ class OvertimeForm(forms.ModelForm):
                 f"Rok nadgodzin ({end_time.year}) musi być zgodny z rokiem zamówienia ({self.order.document_date.year})",
                 code='error'
             )
+
+        # Oblicz liczbę godzin
+        if start_time and end_time:
+            duration = end_time - start_time
+            hours = duration.total_seconds() / 3600  # konwersja na godziny
+            
+            # Pobierz wykorzystane godziny
+            from django.db.models import Sum
+            from .models import Overtime
+            used_hours = Overtime.objects.filter(
+                order=self.order,
+                type=overtime_type
+            ).exclude(id=self.instance.id if self.instance else None).aggregate(
+                total=Sum('hours')
+            )['total'] or 0
+            
+            # Sprawdź dostępny budżet
+            if overtime_type == 'capex':
+                budget = float(self.order.capex_hours or 0)
+            else:  # opex
+                budget = float(self.order.opex_hours or 0)
+            
+            remaining_budget = budget - float(used_hours)
+            
+            if hours > remaining_budget:
+                raise ValidationError(
+                    f"Przekroczono dostępny budżet godzin. Pozostało: {remaining_budget:.1f}h, "
+                    f"próba dodania: {hours:.1f}h",
+                    code='error'
+                )
         
         return cleaned_data
 

@@ -71,6 +71,30 @@ def dashboard(request):
     # Pobierz aktywne zamówienie
     active_orders = Order.objects.filter(user=request.user, status='active')
     
+    # Pobierz zakończone raporty
+    completed_reports = MonthlyReport.objects.filter(
+        user=request.user,
+        status='completed'
+    ).order_by('-month')
+
+    # Przygotuj dane o raportach
+    reports_data = []
+    for report in completed_reports:
+        total_hours = (
+            float(report.capex_hours or 0) + 
+            float(report.opex_hours or 0) + 
+            float(report.consultation_hours or 0)
+        )
+        value = total_hours * float(report.order.hourly_rate or 0)
+        
+        reports_data.append({
+            'month': report.month,
+            'total_hours': total_hours,
+            'status': report.get_status_display(),
+            'value': value,
+            'id': report.id
+        })
+    
     # Inicjalizacja zmiennych
     context = {
         'total_value': calculate_total_value(request.user),
@@ -83,9 +107,12 @@ def dashboard(request):
         'total_used_capex_hours': 0,
         'total_used_opex_hours': 0,
         'total_used_consultation_hours': 0,
+        'overtime_capex_hours': 0,
+        'overtime_opex_hours': 0,
         'capex_progress': 0,
         'opex_progress': 0,
         'consultation_progress': 0,
+        'completed_reports': reports_data,  # Dodajemy dane o raportach
     }
 
     # Oblicz sumy dla wszystkich aktywnych zamówień
@@ -94,6 +121,8 @@ def dashboard(request):
     total_used_capex = 0
     total_used_opex = 0
     total_used_consultation = 0
+    total_overtime_capex = 0
+    total_overtime_opex = 0
     total_capex = 0
     total_opex = 0
     total_consultation = 0
@@ -115,33 +144,28 @@ def dashboard(request):
         used_opex = reports.aggregate(total=Sum('opex_hours'))['total'] or 0
         used_consultation = reports.aggregate(total=Sum('consultation_hours'))['total'] or 0
 
-        # Dodaj nadgodziny
-        overtimes = Overtime.objects.filter(
-            order=order,
-            status='completed'
-        )
-        overtime_capex = overtimes.aggregate(total=Sum('hours', filter=Q(type='capex')))['total'] or 0
-        overtime_opex = overtimes.aggregate(total=Sum('hours', filter=Q(type='opex')))['total'] or 0
+        # Oblicz nadgodziny
+        overtimes = Overtime.objects.filter(order=order)
+        overtime_capex = overtimes.filter(type='capex').aggregate(total=Sum('hours'))['total'] or 0
+        overtime_opex = overtimes.filter(type='opex').aggregate(total=Sum('hours'))['total'] or 0
 
-        # Dodaj do sum całkowitych nadgodzin
+        # Dodaj do sum całkowitych
+        total_used_capex += float(used_capex)
+        total_used_opex += float(used_opex)
+        total_used_consultation += float(used_consultation)
         total_overtime_capex += float(overtime_capex)
         total_overtime_opex += float(overtime_opex)
 
-        # Dodaj do sum całkowitych (włącznie z nadgodzinami)
-        total_used_capex += float(used_capex) + float(overtime_capex)
-        total_used_opex += float(used_opex) + float(overtime_opex)
-        total_used_consultation += float(used_consultation)
-
         # Oblicz wartość rozliczeń (wykorzystane godziny + nadgodziny * stawka)
         hourly_rate = float(order.hourly_rate or 0)
-        total_value += (float(used_capex) + float(overtime_capex) + 
-                       float(used_opex) + float(overtime_opex) + 
-                       float(used_consultation)) * hourly_rate
+        total_value += (float(used_capex) + float(used_opex) + float(used_consultation) + 
+                       float(overtime_capex) + float(overtime_opex)) * hourly_rate
 
         # Oblicz wartość zamówienia (zamówione godziny * stawka)
-        total_order_value += float(order.hourly_rate or 0) * (float(order.capex_hours or 0) + 
-                                                             float(order.opex_hours or 0) + 
-                                                             float(order.consultation_hours or 0))
+        total_order_value += float(order.hourly_rate or 0) * (
+            float(order.capex_hours or 0) + float(order.opex_hours or 0) + 
+            float(order.consultation_hours or 0)
+        )
 
     # Aktualizuj context
     context.update({
@@ -150,16 +174,16 @@ def dashboard(request):
         'total_capex_hours': total_capex,
         'total_opex_hours': total_opex,
         'total_consultation_hours': total_consultation,
-        'total_used_capex_hours': total_used_capex,
-        'total_used_opex_hours': total_used_opex,
+        'total_used_capex_hours': total_used_capex + total_overtime_capex,  # Dodajemy nadgodziny
+        'total_used_opex_hours': total_used_opex + total_overtime_opex,  # Dodajemy nadgodziny
         'total_used_consultation_hours': total_used_consultation,
         'overtime_capex_hours': total_overtime_capex,  # Dodane nadgodziny CAPEX
         'overtime_opex_hours': total_overtime_opex,    # Dodane nadgodziny OPEX
-        'remaining_capex_hours': total_capex - total_used_capex,
-        'remaining_opex_hours': total_opex - total_used_opex,
+        'remaining_capex_hours': total_capex - (total_used_capex + total_overtime_capex),
+        'remaining_opex_hours': total_opex - (total_used_opex + total_overtime_opex),
         'remaining_consultation_hours': total_consultation - total_used_consultation,
-        'capex_progress': (total_used_capex / total_capex * 100) if total_capex > 0 else 0,
-        'opex_progress': (total_used_opex / total_opex * 100) if total_opex > 0 else 0,
+        'capex_progress': ((total_used_capex + total_overtime_capex) / total_capex * 100) if total_capex > 0 else 0,
+        'opex_progress': ((total_used_opex + total_overtime_opex) / total_opex * 100) if total_opex > 0 else 0,
         'consultation_progress': (total_used_consultation / total_consultation * 100) if total_consultation > 0 else 0,
     })
 
@@ -167,27 +191,18 @@ def dashboard(request):
 
 @login_required
 def order_create(request):
-    # Sprawdź czy nie ma już aktywnego zamówienia
-    active_order = Order.objects.filter(user=request.user, status='active').first()
-    if active_order:
-        messages.error(request, f'Masz już aktywne zamówienie ({active_order.number}). Musisz je najpierw zakończyć.')
-        return redirect('dashboard')
-
     if request.method == 'POST':
         form = OrderForm(request.POST, request.FILES, user=request.user)
         if form.is_valid():
             order = form.save(commit=False)
             order.user = request.user
-            order.status = 'active'  # Ustawienie statusu na 'active'
-            try:
-                order.save()
-                messages.success(request, 'Zamówienie zostało dodane.')
-                return redirect('dashboard')
-            except ValidationError as e:
-                messages.error(request, str(e))
+            order.status = Order.Status.DRAFT  # Wymuszamy status draft przy tworzeniu
+            order.save()
+            messages.success(request, 'Zamówienie zostało utworzone.')
+            return redirect('order_list')
     else:
         form = OrderForm(user=request.user)
-
+    
     return render(request, 'main/order_form.html', {'form': form})
 
 @login_required
@@ -286,11 +301,17 @@ def order_detail(request, order_id):
 @login_required
 def order_status_change(request, order_id, new_status):
     order = get_object_or_404(Order, id=order_id, user=request.user)
-    if new_status in [Order.Status.ACTIVE, Order.Status.COMPLETED, Order.Status.ARCHIVED]:
+    
+    try:
         order.status = new_status
         order.save()
         messages.success(request, 'Status zamówienia został zmieniony.')
-    return redirect('order_list')
+    except ValidationError as e:
+        # Pobierz pierwszy komunikat błędu dla pola 'status'
+        error_message = e.message_dict.get('status', [str(e)])[0]
+        messages.error(request, error_message)
+    
+    return redirect('order_detail', order_id=order_id)
 
 @login_required
 def monthly_report_create(request):

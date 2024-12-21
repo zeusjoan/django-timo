@@ -17,6 +17,7 @@ urlpatterns = [
     path('zamowienia/<int:order_id>/pdf/preview/', views.order_pdf_preview, name='order_pdf_preview'),
     path('zamowienia/<int:order_id>/zakoncz/', views.order_complete, name='order_complete'),
     path('zamowienia/<int:order_id>/aktywuj/', views.order_reactivate, name='order_reactivate'),
+    path('zamowienia/<int:order_id>/status/<str:new_status>/', views.order_status_change, name='order_status_change'),
     
     # Rozliczenia miesięczne
     path('rozliczenia/', views.monthly_report_list, name='monthly_report_list'),

@@ -11,24 +11,56 @@ from django.db.models import Sum
 
 class Order(models.Model):
     class Status(models.TextChoices):
+        DRAFT = 'draft', 'Wersja robocza'
         ACTIVE = 'active', 'Aktywne'
         COMPLETED = 'completed', 'Zakończone'
-        CANCELED = 'canceled', 'Anulowane'
+        ARCHIVED = 'archived', 'Zarchiwizowane'
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Użytkownik")
     number = models.CharField(max_length=100, verbose_name="Numer zamówienia")
-    contract = models.CharField(max_length=100, null=True, blank=True, verbose_name="Numer umowy")
-    supplier_number = models.CharField(max_length=100, null=True, blank=True, verbose_name="Numer dostawcy")
+    contract = models.CharField(max_length=100, verbose_name="Numer umowy", null=True, blank=True)
+    supplier_number = models.CharField(max_length=100, verbose_name="Numer dostawy", null=True, blank=True)
     document_date = models.DateField(verbose_name="Data dokumentu", default=timezone.now)
     delivery_date = models.DateField(verbose_name="Data dostawy", null=True, blank=True)
-    hourly_rate = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, verbose_name="Stawka godzinowa")
     capex_hours = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name="Budżet CAPEX (h)")
     opex_hours = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name="Budżet OPEX (h)")
     consultation_hours = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name="Budżet konsultacji (h)")
+    hourly_rate = models.DecimalField(max_digits=10, decimal_places=2, default=0, verbose_name="Stawka godzinowa")
     attachment = models.FileField(upload_to='orders/attachments/', verbose_name="Załącznik", null=True, blank=True)
-    status = models.CharField(max_length=20, choices=Status.choices, default=Status.ACTIVE, verbose_name="Status")
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.DRAFT,  # Zmieniamy domyślny status na DRAFT
+        verbose_name="Status"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    def clean(self):
+        if not self.pk:  # Jeśli to nowy obiekt
+            return  # Nie wykonuj walidacji
+            
+        try:
+            old_status = Order.objects.get(id=self.pk).status
+        except Order.DoesNotExist:
+            return  # Nie wykonuj walidacji dla nowych obiektów
+            
+        # Sprawdzamy tylko jeśli zmieniamy status z draft na active
+        if self.status == self.Status.ACTIVE and old_status == self.Status.DRAFT:
+            # Sprawdź czy istnieje już aktywne zamówienie dla tego użytkownika
+            active_order = Order.objects.filter(
+                user=self.user,
+                status=self.Status.ACTIVE
+            ).exclude(id=self.pk).first()
+            
+            if active_order:
+                raise ValidationError({
+                    'status': f'Masz już aktywne zamówienie ({active_order.number}). Musisz je najpierw zakończyć.'
+                })
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
 
     class Meta:
         verbose_name = "Zamówienie"
