@@ -240,13 +240,17 @@ document.addEventListener('DOMContentLoaded', function() {
     const opexHours = parseFloat('{{ total_used_opex_hours|default:"0.0" }}');
     const capexHours = parseFloat('{{ total_used_capex_hours|default:"0.0" }}');
     
+    const orderedConsultationHours = parseFloat('{{ total_consultation_hours|default:"0.0" }}');
+    const orderedOpexHours = parseFloat('{{ total_opex_hours|default:"0.0" }}');
+    const orderedCapexHours = parseFloat('{{ total_capex_hours|default:"0.0" }}');
+    
     new Chart(budgetsCtx, {
         type: 'bar',
         data: {
             labels: ['Konsultacje', 'OPEX', 'CAPEX'],
             datasets: [{
                 label: 'Zamówione',
-                data: [100.0, 100.0, 100.0],
+                data: [orderedConsultationHours, orderedOpexHours, orderedCapexHours],
                 backgroundColor: 'rgba(88, 103, 221, 0.6)',
                 borderColor: 'rgba(88, 103, 221, 1)',
                 borderWidth: 1
