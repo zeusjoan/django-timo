@@ -97,6 +97,8 @@ def dashboard(request):
     total_capex = 0
     total_opex = 0
     total_consultation = 0
+    total_overtime_capex = 0  # Suma nadgodzin CAPEX
+    total_overtime_opex = 0   # Suma nadgodzin OPEX
 
     for order in active_orders:
         # Dodaj zamówione godziny
@@ -113,28 +115,46 @@ def dashboard(request):
         used_opex = reports.aggregate(total=Sum('opex_hours'))['total'] or 0
         used_consultation = reports.aggregate(total=Sum('consultation_hours'))['total'] or 0
 
-        # Dodaj do sum całkowitych
-        total_used_capex += float(used_capex)
-        total_used_opex += float(used_opex)
+        # Dodaj nadgodziny
+        overtimes = Overtime.objects.filter(
+            order=order,
+            status='completed'
+        )
+        overtime_capex = overtimes.aggregate(total=Sum('hours', filter=Q(type='capex')))['total'] or 0
+        overtime_opex = overtimes.aggregate(total=Sum('hours', filter=Q(type='opex')))['total'] or 0
+
+        # Dodaj do sum całkowitych nadgodzin
+        total_overtime_capex += float(overtime_capex)
+        total_overtime_opex += float(overtime_opex)
+
+        # Dodaj do sum całkowitych (włącznie z nadgodzinami)
+        total_used_capex += float(used_capex) + float(overtime_capex)
+        total_used_opex += float(used_opex) + float(overtime_opex)
         total_used_consultation += float(used_consultation)
 
-        # Oblicz wartość rozliczeń (wykorzystane godziny * stawka)
+        # Oblicz wartość rozliczeń (wykorzystane godziny + nadgodziny * stawka)
         hourly_rate = float(order.hourly_rate or 0)
-        total_value += (float(used_capex) + float(used_opex) + float(used_consultation)) * hourly_rate
+        total_value += (float(used_capex) + float(overtime_capex) + 
+                       float(used_opex) + float(overtime_opex) + 
+                       float(used_consultation)) * hourly_rate
 
         # Oblicz wartość zamówienia (zamówione godziny * stawka)
-        total_order_value += float(order.hourly_rate or 0) * (float(order.capex_hours or 0) + float(order.opex_hours or 0) + float(order.consultation_hours or 0))
+        total_order_value += float(order.hourly_rate or 0) * (float(order.capex_hours or 0) + 
+                                                             float(order.opex_hours or 0) + 
+                                                             float(order.consultation_hours or 0))
 
     # Aktualizuj context
     context.update({
         'total_value': total_value,  # Wartość rozliczeń
+        'total_order_value': total_order_value,  # Wartość zamówień
         'total_capex_hours': total_capex,
         'total_opex_hours': total_opex,
         'total_consultation_hours': total_consultation,
         'total_used_capex_hours': total_used_capex,
         'total_used_opex_hours': total_used_opex,
         'total_used_consultation_hours': total_used_consultation,
-        'total_order_value': total_order_value,
+        'overtime_capex_hours': total_overtime_capex,  # Dodane nadgodziny CAPEX
+        'overtime_opex_hours': total_overtime_opex,    # Dodane nadgodziny OPEX
         'remaining_capex_hours': total_capex - total_used_capex,
         'remaining_opex_hours': total_opex - total_used_opex,
         'remaining_consultation_hours': total_consultation - total_used_consultation,
