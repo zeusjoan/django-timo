@@ -157,6 +157,92 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             }
         }
 
+        # Nowa sekcja - Porównanie godzin między miesiącami
+        # Pobieramy dane z poprzedniego miesiąca
+        previous_month = end_date - timedelta(days=end_date.day)
+        previous_month_start = previous_month.replace(day=1)
+        previous_month_end = end_date.replace(day=1) - timedelta(days=1)
+
+        # Pobieramy dane z bieżącego miesiąca
+        current_month_start = end_date.replace(day=1)
+        current_month_end = end_date
+
+        # Statystyki dla poprzedniego miesiąca
+        previous_month_stats = MonthlyReport.objects.filter(
+            user=user,
+            month__range=(previous_month_start, previous_month_end)
+        ).aggregate(
+            total_capex=Sum('capex_hours') or 0,
+            total_opex=Sum('opex_hours') or 0,
+            total_consultation=Sum('consultation_hours') or 0
+        )
+
+        # Statystyki dla bieżącego miesiąca
+        current_month_stats = MonthlyReport.objects.filter(
+            user=user,
+            month__range=(current_month_start, current_month_end)
+        ).aggregate(
+            total_capex=Sum('capex_hours') or 0,
+            total_opex=Sum('opex_hours') or 0,
+            total_consultation=Sum('consultation_hours') or 0
+        )
+
+        # Dodajemy nadgodziny do statystyk
+        previous_month_overtime = Overtime.objects.filter(
+            user=user,
+            start_time__range=(previous_month_start, previous_month_end),
+            status='completed'
+        ).aggregate(
+            overtime_capex=Sum('hours', filter=models.Q(type='capex')) or 0,
+            overtime_opex=Sum('hours', filter=models.Q(type='opex')) or 0
+        )
+
+        current_month_overtime = Overtime.objects.filter(
+            user=user,
+            start_time__range=(current_month_start, current_month_end),
+            status='completed'
+        ).aggregate(
+            overtime_capex=Sum('hours', filter=models.Q(type='capex')) or 0,
+            overtime_opex=Sum('hours', filter=models.Q(type='opex')) or 0
+        )
+
+        # Przygotowanie danych do porównania
+        hours_comparison = {
+            'previous_month': {
+                'name': previous_month.strftime('%B %Y'),
+                'capex': float(previous_month_stats['total_capex']) + float(previous_month_overtime['overtime_capex']),
+                'opex': float(previous_month_stats['total_opex']) + float(previous_month_overtime['overtime_opex']),
+                'consultation': float(previous_month_stats['total_consultation'])
+            },
+            'current_month': {
+                'name': current_month_start.strftime('%B %Y'),
+                'capex': float(current_month_stats['total_capex']) + float(current_month_overtime['overtime_capex']),
+                'opex': float(current_month_stats['total_opex']) + float(current_month_overtime['overtime_opex']),
+                'consultation': float(current_month_stats['total_consultation'])
+            }
+        }
+
+        # Obliczanie procentowych zmian
+        def calculate_change_percentage(current, previous):
+            if previous == 0:
+                return 100 if current > 0 else 0
+            return ((current - previous) / previous) * 100
+
+        hours_comparison['changes'] = {
+            'capex': calculate_change_percentage(
+                hours_comparison['current_month']['capex'],
+                hours_comparison['previous_month']['capex']
+            ),
+            'opex': calculate_change_percentage(
+                hours_comparison['current_month']['opex'],
+                hours_comparison['previous_month']['opex']
+            ),
+            'consultation': calculate_change_percentage(
+                hours_comparison['current_month']['consultation'],
+                hours_comparison['previous_month']['consultation']
+            )
+        }
+
         context.update({
             'months': json.dumps(months),
             'capex_data': json.dumps(capex_data),
@@ -167,7 +253,6 @@ class DashboardView(LoginRequiredMixin, TemplateView):
             'archived_orders': archived_orders,
             'recent_overtime': recent_overtime,
             'total_value': float(total_value),
-            # Nowe dane budżetowe
             'budget_stats': {
                 'capex': {
                     'total': total_budget_capex,
@@ -190,13 +275,8 @@ class DashboardView(LoginRequiredMixin, TemplateView):
                     'remaining': remaining_budget_consultation,
                     'percentages': budget_percentages['consultation']
                 }
-            }
+            },
+            'hours_comparison': hours_comparison  # Dodajemy nowe dane do kontekstu
         })
-
-        # Debug print
-        print("Active Orders Budgets:", active_orders_budgets)
-        print("Used Hours:", used_hours)
-        print("Overtime Hours:", overtime_hours)
-        print("Budget Stats:", context['budget_stats'])
 
         return context
