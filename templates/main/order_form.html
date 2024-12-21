@@ -15,23 +15,23 @@
                     {% csrf_token %}
                     
                     <!-- Daty -->
-    <div class="mb-4">
-        <h4 class="text-primary fw-bold mb-4">Daty</h4>
-        <div class="row gy-4">
-            <div class="col-md-6">{{ form.document_date|as_crispy_field }}</div>
-            <div class="col-md-6">{{ form.delivery_date|as_crispy_field }}</div>
-        </div>
-    </div>
+                    <div class="mb-4">
+                        <h4 class="text-primary fw-bold mb-4">Daty</h4>
+                        <div class="row gy-4">
+                            <div class="col-md-6">{{ form.document_date|as_crispy_field }}</div>
+                            <div class="col-md-6">{{ form.delivery_date|as_crispy_field }}</div>
+                        </div>
+                    </div>
 
-    <!-- Dane podstawowe -->
-    <div class="mb-4">
-        <h4 class="text-primary fw-bold mb-4">Dane podstawowe</h4>
-        <div class="row gy-4">
-            <div class="col-md-6">{{ form.number|as_crispy_field }}</div>
-            <div class="col-md-6">{{ form.contract|as_crispy_field }}</div>
-            <div class="col-md-6">{{ form.supplier_number|as_crispy_field }}</div>
-        </div>
-    </div>
+                    <!-- Dane podstawowe -->
+                    <div class="mb-4">
+                        <h4 class="text-primary fw-bold mb-4">Dane podstawowe</h4>
+                        <div class="row gy-4">
+                            <div class="col-md-6">{{ form.number|as_crispy_field }}</div>
+                            <div class="col-md-6">{{ form.contract|as_crispy_field }}</div>
+                            <div class="col-md-6">{{ form.supplier_number|as_crispy_field }}</div>
+                        </div>
+                    </div>
 
                     <!-- Budżet -->
                     <div class="mb-4">
@@ -49,14 +49,6 @@
                         <h4 class="text-primary fw-bold mb-3">Załącznik</h4>
                         <div class="row">
                             <div class="col-md-12">{{ form.attachment|as_crispy_field }}</div>
-                        </div>
-                    </div>
-
-                    <!-- Status -->
-                    <div class="mb-4">
-                        <h4 class="text-primary fw-bold mb-3">Status</h4>
-                        <div class="row">
-                            <div class="col-md-12">{{ form.status|as_crispy_field }}</div>
                         </div>
                     </div>
 

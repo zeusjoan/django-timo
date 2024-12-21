@@ -153,7 +153,13 @@
                                     <i class="fas fa-edit me-1"></i> Edytuj
                                 </a>
                             </div>
-                            {% if order.status == 'active' %}
+                            {% if order.status == 'draft' %}
+                            <div class="btn-group me-2">
+                                <a href="{% url 'order_status_change' order.id 'active' %}" class="btn btn-success rounded-pill px-3">
+                                    <i class="fas fa-play me-1"></i> Aktywuj
+                                </a>
+                            </div>
+                            {% elif order.status == 'active' %}
                             <div class="btn-group me-2">
                                 <a href="{% url 'order_complete' order.id %}" class="btn btn-success rounded-pill px-3">
                                     <i class="fas fa-check me-1"></i> Zakończ
