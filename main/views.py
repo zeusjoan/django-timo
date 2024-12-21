@@ -45,13 +45,19 @@ def calculate_total_value(user):
             hourly_rate = float(order.hourly_rate or 0)
             
             # Pobierz przepracowane godziny z rozliczeń
-            reports = MonthlyReport.objects.filter(order=order)
+            reports = MonthlyReport.objects.filter(
+                order=order,
+                status='completed'  # Tylko zatwierdzone raporty
+            )
             hours = reports.aggregate(
                 total_hours=Sum(F('capex_hours') + F('opex_hours') + F('consultation_hours'))
             )['total_hours'] or 0
             
-            # Dodaj nadgodziny
-            overtimes = Overtime.objects.filter(order=order)
+            # Dodaj nadgodziny z zatwierdzonych raportów
+            overtimes = Overtime.objects.filter(
+                order=order,
+                status='completed'  # Tylko zatwierdzone nadgodziny
+            )
             overtime_hours = overtimes.aggregate(
                 total_hours=Sum('hours')
             )['total_hours'] or 0
@@ -63,95 +69,79 @@ def calculate_total_value(user):
 @login_required
 def dashboard(request):
     # Pobierz aktywne zamówienie
-    active_order = Order.objects.filter(user=request.user, status='active').first()
+    active_orders = Order.objects.filter(user=request.user, status='active')
     
+    # Inicjalizacja zmiennych
     context = {
         'total_value': calculate_total_value(request.user),
         'remaining_capex_hours': 0,
         'remaining_opex_hours': 0,
         'remaining_consultation_hours': 0,
-        'used_capex_hours': 0,
-        'used_opex_hours': 0,
-        'used_consultation_hours': 0,
-        'overtime_capex_hours': 0,
-        'overtime_opex_hours': 0,
         'total_capex_hours': 0,
         'total_opex_hours': 0,
         'total_consultation_hours': 0,
         'total_used_capex_hours': 0,
         'total_used_opex_hours': 0,
+        'total_used_consultation_hours': 0,
         'capex_progress': 0,
         'opex_progress': 0,
         'consultation_progress': 0,
     }
 
-    if active_order:
-        # Pobierz zamówione godziny
-        total_capex = float(active_order.capex_hours or 0)
-        total_opex = float(active_order.opex_hours or 0)
-        total_consultation = float(active_order.consultation_hours or 0)
+    # Oblicz sumy dla wszystkich aktywnych zamówień
+    total_order_value = 0
+    total_value = 0  # Wartość rozliczeń
+    total_used_capex = 0
+    total_used_opex = 0
+    total_used_consultation = 0
+    total_capex = 0
+    total_opex = 0
+    total_consultation = 0
 
-        # Oblicz wykorzystane godziny tylko z rozliczonych raportów
+    for order in active_orders:
+        # Dodaj zamówione godziny
+        total_capex += float(order.capex_hours or 0)
+        total_opex += float(order.opex_hours or 0)
+        total_consultation += float(order.consultation_hours or 0)
+
+        # Oblicz wykorzystane godziny z rozliczonych raportów
         reports = MonthlyReport.objects.filter(
-            order=active_order,
-            status='completed'  # Status 'completed' dla rozliczonych raportów
+            order=order,
+            status='completed'
         )
         used_capex = reports.aggregate(total=Sum('capex_hours'))['total'] or 0
         used_opex = reports.aggregate(total=Sum('opex_hours'))['total'] or 0
         used_consultation = reports.aggregate(total=Sum('consultation_hours'))['total'] or 0
 
-        # Oblicz nadgodziny tylko z rozliczonych raportów
-        overtimes = Overtime.objects.filter(
-            order=active_order,
-            status='completed'  # Status 'completed' dla rozliczonych nadgodzin
-        )
-        overtime_capex = overtimes.filter(type='capex').aggregate(total=Sum('hours'))['total'] or 0
-        overtime_opex = overtimes.filter(type='opex').aggregate(total=Sum('hours'))['total'] or 0
+        # Dodaj do sum całkowitych
+        total_used_capex += float(used_capex)
+        total_used_opex += float(used_opex)
+        total_used_consultation += float(used_consultation)
 
-        # Całkowite wykorzystane godziny (z raportów + nadgodziny)
-        total_used_capex = float(used_capex) + float(overtime_capex)
-        total_used_opex = float(used_opex) + float(overtime_opex)
-        total_used_consultation = float(used_consultation)  # konsultacje nie mają nadgodzin
+        # Oblicz wartość rozliczeń (wykorzystane godziny * stawka)
+        hourly_rate = float(order.hourly_rate or 0)
+        total_value += (float(used_capex) + float(used_opex) + float(used_consultation)) * hourly_rate
 
-        # Oblicz pozostałe godziny (od zamówionych odejmujemy całkowite wykorzystane)
-        remaining_capex = total_capex - total_used_capex
-        remaining_opex = total_opex - total_used_opex
-        remaining_consultation = total_consultation - total_used_consultation
+        # Oblicz wartość zamówienia (zamówione godziny * stawka)
+        total_order_value += float(order.hourly_rate or 0) * (float(order.capex_hours or 0) + float(order.opex_hours or 0) + float(order.consultation_hours or 0))
 
-        # Oblicz procent wykorzystania (wliczając nadgodziny)
-        if total_capex:
-            capex_progress = (total_used_capex / total_capex) * 100
-        else:
-            capex_progress = 0
-
-        if total_opex:
-            opex_progress = (total_used_opex / total_opex) * 100
-        else:
-            opex_progress = 0
-
-        if total_consultation:
-            consultation_progress = (total_used_consultation / total_consultation) * 100
-        else:
-            consultation_progress = 0
-
-        context.update({
-            'remaining_capex_hours': remaining_capex,
-            'remaining_opex_hours': remaining_opex,
-            'remaining_consultation_hours': remaining_consultation,
-            'used_capex_hours': used_capex,
-            'used_opex_hours': used_opex,
-            'used_consultation_hours': used_consultation,
-            'overtime_capex_hours': overtime_capex,
-            'overtime_opex_hours': overtime_opex,
-            'total_capex_hours': total_capex,
-            'total_opex_hours': total_opex,
-            'total_consultation_hours': total_consultation,
-            'total_used_capex_hours': total_used_capex,
-            'total_used_opex_hours': total_used_opex,
-            'capex_progress': min(capex_progress, 100),
-            'opex_progress': min(opex_progress, 100),
-            'consultation_progress': min(consultation_progress, 100),
-        })
+    # Aktualizuj context
+    context.update({
+        'total_value': total_value,  # Wartość rozliczeń
+        'total_capex_hours': total_capex,
+        'total_opex_hours': total_opex,
+        'total_consultation_hours': total_consultation,
+        'total_used_capex_hours': total_used_capex,
+        'total_used_opex_hours': total_used_opex,
+        'total_used_consultation_hours': total_used_consultation,
+        'total_order_value': total_order_value,
+        'remaining_capex_hours': total_capex - total_used_capex,
+        'remaining_opex_hours': total_opex - total_used_opex,
+        'remaining_consultation_hours': total_consultation - total_used_consultation,
+        'capex_progress': (total_used_capex / total_capex * 100) if total_capex > 0 else 0,
+        'opex_progress': (total_used_opex / total_opex * 100) if total_opex > 0 else 0,
+        'consultation_progress': (total_used_consultation / total_consultation * 100) if total_consultation > 0 else 0,
+    })
 
     return render(request, 'main/dashboard.html', context)
 

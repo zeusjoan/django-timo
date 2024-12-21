@@ -20,14 +20,14 @@
 
     <div class="row">
         <!-- Wartość rozliczeń -->
-        <div class="col-12 mb-4">
+        <div class="col-md-6 mb-4">
             <div class="card border-0 shadow h-100">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <h6 class="text-uppercase text-muted fw-semibold mb-2">Wartość rozliczeń</h6>
                             <h2 class="mb-0">{{ total_value|default:"0.00" }} PLN</h2>
-                            <p class="text-muted mb-0">Suma wartości z zakończonych rozliczeń dla aktywnych zamówień</p>
+                            <p class="text-muted mb-0">Suma wartości z zakończonych rozliczeń</p>
                         </div>
                         <div class="icon-shape icon-lg bg-success-subtle text-success rounded-3">
                             <i class="fas fa-money-bill-wave fa-fw"></i>
@@ -36,20 +36,87 @@
                 </div>
             </div>
         </div>
-
-        <!-- Wykres budżetów -->
-        <div class="col-12 mb-4">
+    
+        <!-- Suma rozliczonych godzin -->
+        <div class="col-md-6 mb-4">
             <div class="card border-0 shadow h-100">
                 <div class="card-body">
-                    <h6 class="text-uppercase text-muted fw-semibold mb-3 text-center">Wykorzystanie zamówienia</h6>
-                    <div style="height: 300px;">
-                        <canvas id="budgetsChart"></canvas>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-uppercase text-muted fw-semibold mb-2">Suma rozliczonych godzin</h6>
+                            <h2 class="mb-0">{{ total_used_consultation_hours|add:total_used_opex_hours|add:total_used_capex_hours|default:"0" }} h</h2>
+                            <p class="text-muted mb-0">Łączna liczba wykorzystanych godzin</p>
+                        </div>
+                        <div class="icon-shape icon-lg bg-warning-subtle text-warning rounded-3">
+                            <i class="fas fa-hourglass-end fa-fw"></i>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
+    
+        <!-- Wartość zamówień -->
+        <div class="col-md-6 mb-4">
+            <div class="card border-0 shadow h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-uppercase text-muted fw-semibold mb-2">Wartość zamówień</h6>
+                            <h2 class="mb-0">{{ total_order_value|default:"0.00" }} PLN</h2>
+                            <p class="text-muted mb-0">Suma wartości wszystkich zamówień</p>
+                        </div>
+                        <div class="icon-shape icon-lg bg-primary-subtle text-primary rounded-3">
+                            <i class="fas fa-file-invoice-dollar fa-fw"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    
+        <!-- Suma zamówionych godzin -->
+        <div class="col-md-6 mb-4">
+            <div class="card border-0 shadow h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="text-uppercase text-muted fw-semibold mb-2">Suma zamówionych godzin</h6>
+                            <h2 class="mb-0">{{ total_consultation_hours|add:total_opex_hours|add:total_capex_hours|default:"0" }} h</h2>
+                            <p class="text-muted mb-0">Łączna liczba zamówionych godzin</p>
+                        </div>
+                        <div class="icon-shape icon-lg bg-info-subtle text-info rounded-3">
+                            <i class="fas fa-clock fa-fw"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+       
+    <!-- Status zamówień -->
+    <div class="col-12 mb-4">
+        <div class="card border-0 shadow h-100">
+            <div class="card-body">
+                <h6 class="text-uppercase text-muted fw-semibold mb-3 text-center">STATUS ZAMÓWIEŃ</h6>
+                <div style="height: 300px;">
+                    <canvas id="hoursComparisonChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Wykres budżetów -->
+    <div class="col-12 mb-4">
+        <div class="card border-0 shadow h-100">
+            <div class="card-body">
+                <h6 class="text-uppercase text-muted fw-semibold mb-3 text-center">Wykorzystanie zamówienia</h6>
+                <div style="height: 300px;">
+                    <canvas id="budgetsChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
 
-        <!-- Budżety -->
+    <!-- Budżety -->
+    <div class="row">
         <div class="col-md-4 mb-4">
             <div class="card border-0 shadow h-100">
                 <div class="card-body">
@@ -119,12 +186,13 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const ctx = document.getElementById('budgetsChart').getContext('2d');
+    // Budżety Chart
+    const budgetsCtx = document.getElementById('budgetsChart').getContext('2d');
     const consultationHours = parseFloat('{{ total_used_consultation_hours|default:"0.0" }}');
     const opexHours = parseFloat('{{ total_used_opex_hours|default:"0.0" }}');
     const capexHours = parseFloat('{{ total_used_capex_hours|default:"0.0" }}');
     
-    new Chart(ctx, {
+    new Chart(budgetsCtx, {
         type: 'bar',
         data: {
             labels: ['Konsultacje', 'OPEX', 'CAPEX'],
@@ -157,7 +225,6 @@ document.addEventListener('DOMContentLoaded', function() {
                             color: '#000000'
                         }
                     },
-                    max: 100,
                     ticks: {
                         font: {
                             size: 12
@@ -188,23 +255,116 @@ document.addEventListener('DOMContentLoaded', function() {
                         padding: 20
                     }
                 },
+                datalabels: {
+                    anchor: 'center',
+                    align: 'center',
+                    formatter: function(value) {
+                        return Math.round(value) + ' h';
+                    },
+                    font: {
+                        size: 14,
+                        weight: 'bold',
+                        color: '#000000'
+                    },
+                    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+                    borderRadius: 4,
+                    padding: 4
+                }
+            }
+        },
+        plugins: [ChartDataLabels]
+    });
+
+    // Hours Comparison Chart
+    const hoursCtx = document.getElementById('hoursComparisonChart').getContext('2d');
+    const totalUsedHours = consultationHours + opexHours + capexHours;
+    const totalOrderedHours = parseFloat('{{ total_consultation_hours|default:"0.0" }}') + 
+                            parseFloat('{{ total_opex_hours|default:"0.0" }}') + 
+                            parseFloat('{{ total_capex_hours|default:"0.0" }}');
+    
+    new Chart(hoursCtx, {
+        type: 'bar',
+        data: {
+            labels: ['Godziny'],
+            datasets: [{
+                label: 'Zamówione',
+                data: [totalOrderedHours],
+                backgroundColor: 'rgba(88, 103, 221, 0.6)',
+                borderColor: 'rgba(88, 103, 221, 1)',
+                borderWidth: 1
+            }, {
+                label: 'Wykorzystane',
+                data: [totalUsedHours],
+                backgroundColor: 'rgba(255, 184, 34, 0.6)',
+                borderColor: 'rgba(255, 184, 34, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Suma godzin',
+                        font: {
+                            size: 14,
+                            weight: 'bold',
+                            color: '#000000'
+                        }
+                    },
+                    ticks: {
+                        font: {
+                            size: 12
+                        },
+                        color: '#000000'
+                    }
+                },
+                x: {
+                    ticks: {
+                        font: {
+                            size: 12,
+                            weight: 'bold'
+                        },
+                        color: '#000000'
+                    }
+                }
+            },
+            plugins: {
                 title: {
                     display: false
+                },
+                subtitle: {
+                    display: false
+                },
+                legend: {
+                    position: 'top',
+                    align: 'center',
+                    labels: {
+                        font: {
+                            size: 12,
+                            weight: 'bold'
+                        },
+                        color: '#000000',
+                        padding: 20
+                    }
                 },
                 datalabels: {
                     anchor: 'center',
                     align: 'center',
-                    color: '#000000',
-                    font: {
-                        weight: 'bold',
-                        size: 13
-                    },
                     formatter: function(value) {
-                        return Math.round(value) + 'h';
+                        return Math.round(value) + ' h';
                     },
-                    display: function(context) {
-                        return context.dataset.data[context.dataIndex] > 0;
-                    }
+                    font: {
+                        size: 14,
+                        weight: 'bold',
+                        color: '#000000'
+                    },
+                    backgroundColor: 'rgba(255, 255, 255, 0.7)',
+                    borderRadius: 4,
+                    padding: 4
                 }
             }
         },
