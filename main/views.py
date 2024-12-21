@@ -71,6 +71,30 @@ def dashboard(request):
     # Pobierz aktywne zamówienie
     active_orders = Order.objects.filter(user=request.user, status='active')
     
+    # Pobierz zakończone raporty
+    completed_reports = MonthlyReport.objects.filter(
+        user=request.user,
+        status='completed'
+    ).order_by('-month')
+
+    # Przygotuj dane o raportach
+    reports_data = []
+    for report in completed_reports:
+        total_hours = (
+            float(report.capex_hours or 0) + 
+            float(report.opex_hours or 0) + 
+            float(report.consultation_hours or 0)
+        )
+        value = total_hours * float(report.order.hourly_rate or 0)
+        
+        reports_data.append({
+            'month': report.month,
+            'total_hours': total_hours,
+            'status': report.get_status_display(),
+            'value': value,
+            'id': report.id
+        })
+    
     # Inicjalizacja zmiennych
     context = {
         'total_value': calculate_total_value(request.user),
@@ -88,6 +112,7 @@ def dashboard(request):
         'capex_progress': 0,
         'opex_progress': 0,
         'consultation_progress': 0,
+        'completed_reports': reports_data,  # Dodajemy dane o raportach
     }
 
     # Oblicz sumy dla wszystkich aktywnych zamówień
